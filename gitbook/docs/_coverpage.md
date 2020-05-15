@@ -10,4 +10,4 @@
 * 操作系统
 
 [GitHub](https://github.com/goolory)
-[Get started](#quick-start)
+[Get started](#📚c)
