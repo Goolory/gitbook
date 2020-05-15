@@ -9,5 +9,5 @@
 * 计算机网络
 * 操作系统
 
-[GitHub](https://github.com/goolory)
+[Blog](http://xyongs.cn)
 [Get started](#📚c)
