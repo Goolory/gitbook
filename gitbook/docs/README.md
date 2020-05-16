@@ -70,7 +70,7 @@ C++中的explicit关键字只能修饰只有一个参数的类构造函数，作
 
 ​	2、为了避免对同一对象进行赋值操作；
 
-​	3、实现一些数据结构时，
+​	3、实现一些数据结构时，如：list
 
 ### 🏷 inline 内联函数
 
@@ -146,7 +146,27 @@ int main()
 }
 ```
 
+### 🏷 assert()
 
+断言，是宏，而非函数。assert宏的原型定义在 `<assert.h>` c语言 -- `<cassert>` C++
+
+ 作用：如果他的条件返回错误，则终止程序执行。可以通过定义 `NOEBUG` 来关闭，需要定义在 `include<assert.h>`  之前 
+
+```c++
+#define NDEBUG
+#include<assert.h>
+assert(p != nullptr);
+```
+
+### 🏷 sizeof()
+
+* sizeof对数组，得到整个数组占空间大小
+
+* sizeof对指针，得到指针本身大小
+
+  ​	sizefof(空类) = 1；[类的大小——sizeof 的研究(1)](https://www.jianshu.com/p/5163a2678171)
+
+  ​	因为一个空类也要实例化，所谓类的实例化就是在内存中分配一块地址，每个实例在内存中都有独一无二的的地址。同样空类也会被实例化
 
 ### 🏷 C/C++程序内存存储区域
 
@@ -187,6 +207,465 @@ c/c++不提供垃圾回收机制，因此需要对堆中的数据进行及时的
 **首先 new对应的是delete-C++中使用， malloc对应free- c语言使用。free用来释放malloc出来的动态空间，delete用来释放new出来的空间**
 
 **new与malloc区别**
+
+1、new 和malloc都是在堆上开辟内存的
+
+​	malloc只负责开辟内存，没有初始化功能，需要用户自己初始化；new 不但可以开辟内存，还可以进行初始化。
+
+2、malloc是函数，开辟内存需要传入字节数，如 `malloc(100)` 表示在堆上开辟了100个字节的内存，返回void *，表示分配的堆内存的起始位置，因此malloc的返回值需要强制转换为所需类型；new是运算符，开辟的内存需要指定类型，返回指定类型的地址，无需强转
+
+3、 malloc开辟内存失败返回NULL，new 开辟失败返回bad_alloc类型的异常，需要捕获异常才能判断内存是否开辟成功，new 运算符其实operator new 函数的调用，它的底层也是malloc来开辟内存，new它比malloc多的功能就是初始化功能，对应类型来说，就是调用构造函数
+
+4、malloc用free释放，new用delete释放
+
+#### malloc、calloc、realloc、alloca
+
+1、malloc：申请指定字节数内存。申请到的内存中的初始值不确定
+
+2、calloc：为指定长度的对象，分配能够容纳指定个数的内存。申请到的内存的每一bit都初始化为0
+
+3、realloc：更改以前分配的内存长度（增加或减少）。当增加长度时，可能需将以前分配区的内容移动另一个足够大的区域，而新增区域内的初始化值则不确定
+
+4、alloca：在栈上申请内存。程序在出栈的时候，会自动释放内存。但是需要注意的是，alloca不具备可移植性。
+
+### 🏷 #pragma pack(n)
+
+设定结构体、联合体以及类成员变量以n字节方式对齐
+
+```c++
+#pragma pack(push) //保存对齐状态
+#pragma pack(4)  //设定为4字节对齐
+static test
+{
+  char m1;
+  double m4;
+  int m3;
+};
+#pragma pack(pop)  // 恢复对齐状态 
+```
+
+
+
+### 🏷 c与C++区别
+
+设计思想上:
+
+C++是面向对象的语言，而C是面向过程的结构化编程语言
+
+语法上：
+
+C++具有封装、继承、多态性
+
+C++与C相比，增加了许多类型安全功能，比如强制类型转换
+
+C++支持范式编程，如模板类，函数模板等
+
+### 🏷 cast转换
+
+C++中四种类型转换： [原文](https://www.jianshu.com/p/5163a2678171)
+
+1、const_cast
+
+格式：`const int b = 0; int * p = const_cast<int* > (&b);`
+
+用于将const变量转为非const
+
+2、static_cast
+
+static_cast的转换格式： `static_cast <type-id> (expression)`
+
+a. 基本数据类型之间的转换，如int 转char
+
+举例：
+
+```c++
+short value = 64;
+int val = static_cast<int> (value);
+// short是2个字节，int是4个字节，将short转成int之后，高位根据符号位补满
+```
+
+b. 用于类层次结构中，基类和子类之间的指针和引用的转换
+
+> 当进行上行转换，子类的指针或引用转成父类表示，这是安全的
+>
+> 当进行下行转换，父类的指针或引用转成子类表示，这是不安全的，需要程序员保证
+
+c. 用于各种隐式转换，比如非const转const, void*转指针等。
+
+3、dynamic_cast
+
+用于动态类型转换。只能用于含有虚函数的类，用于类层次间的向上或向下转换。只能转指针或引用。向下转化时，如果是非法的对于指针返回NULL，对于引用抛出异常
+
+它通过判断在执行到该语句的时候变量的运行时类型和要转换的类型是否相同来判断是否能够进行转换
+
+4、reinterpret_cast
+
+几乎什么都可转，比如int转指针
+
+### 🏷 指针与引用
+
+1、指针有自己的一块空间，而引用只是一个别名
+
+2、使用sizeof看，一个指针的大小是4，而引用则是被引用对象的大小
+
+3、指针可以被初始化为NULL，而引用必须被初始化一个已有对象的引用
+
+4、作为参数传递时，指针需要被解引用才可以进行对对象的操作，而直接对引用的修改会改变引用指向的对象；
+
+5、指针在使用中可以指向其他的对象，但是引用只能对一个对象的引用
+
+6、指针可以有多级指针（** p) ，而引用只有一级
+
+7、指针和引用使用++运算符的意义不一样
+
+8、如果返回多态内存分配对象或内存，必须使用指针，引用可能引起内存泄漏
+
+### 🏷 C++中struct和class
+
+总的来说，struct更适合看做一个数据结构的食堂，class更适合看成一个对象的实体
+
+在C++中可以使用struct和class定义类，都可以继承。
+
+区别在于:struct的默认继承权限和默认访问权限是public；
+
+class的默认继承权限和默认访问权限是private
+
+另外， class还可以定义模板类形参，如 `template<class T, int i>`
+
+### 🏷 类成员的访问权限
+
+1、public：类中、类外可以访问
+
+2、protected：子类
+
+3、private：成员函数可以访问
+
+### 🏷 union联合
+
+union是一种节省空间的特殊的类，一个union可以有多个数据成员，但是对外只表示一个数据成员。当某个数据成员被赋值后其他成员变成未定义状态。联合特点
+
+* 默认访问控制符是public
+* 可以包含构造函数、析构函数
+* 不能含有引用类型的成员
+* 不能继承、和被继承
+* 匿名union在定义所在作用域可以直接访问成员
+* 不能包含protected和private成员
+* 全局匿名联合必须是静态（static）的
+
+```c++
+#include<iostream>
+union UnionTest{
+  UnionTest():i(10){};
+  int i;
+  double d;
+};
+
+static union{
+  int i;
+  double d;
+};
+int main()
+{
+  UnionTest u;
+  union {
+    int i;
+    double d;
+  };
+  std::cout << u.i << std::endl; // 输出UnionTest的10
+  ::i = 20;
+  std::cout << ::i << std::endl; //输出全局静态匿名联合20
+  i= 30;
+  std::cout << i << std::endl;  //30
+  return 0;
+}
+```
+
+### 🏷 友元
+
+友元关系不具有对称性。即A是B的友元，但B不一定是A的友元。友元关系也不具有传递性，即B是A的友元，C是B的友元，但C不一定是A的友元
+
+### 友元函数
+
+特点：友元函数是能够访问类中的私有成员的非成员函数。友元与普通函数一样，即在定义上和调用上与普通函数一样。
+
+```c++
+#include<iostream>
+#include<cmath>
+using namespace std;
+class Point
+{
+  public:
+    Point(double xx, double yy)
+    {
+      x = xx;
+      y = yy;
+    }
+  void Getxy();
+  friend double Distance(Point &a, Point &b);
+  private:
+    double x, y;
+};
+void Point::Getxy()
+{
+  cout<<x<<y<<endl;
+}
+double Distance(Point &a, Point &b)
+{
+  double dx = a.x - b.x;
+  double dy = a.y = b.y;
+  return sqrt(dx*dx + dy*dy);
+}
+
+int main(void)
+{
+  Point P1(3.0, 4.0), p2(6.0, 8.0);
+  double d = Distance(p1, p2);
+  cout << d;
+  return 0;
+}
+```
+
+在该程序中的Point类中声明了一个友元函数Distance()，函数名前加friend关键字。但是他的定义与普通函数是一样的，不需要指出所属类，但是它可以引用类中的私有成员。
+
+#### 友元类
+
+定义：友元除了函数以为，还可以是类，即一个类作为另一个类的友元。当一个类作为另一个类的友元时，这就意味着这个类的所有成员函数都是另一个类的友元函数，都可以访问另一个类的隐藏信息（包括私有成员和保护成员）
+
+### 🏷 using 
+
+**using 声明**：
+
+一条 `using声明` 语句一次只能引入命名空间的一个成员。它使得我们可以清楚知道程序中所引用的到底是哪个名字， 如 `using namespace_name::name`
+
+**构造函数的using声明**
+
+在C++11 中，派生类能够重用其直接基类定义的构造函数
+
+```c++
+class Derived::Base
+{
+  public:
+    using Base:base;
+};
+```
+
+如上using声明，对应基类的每个构造函数，编译器都生成一个与之对应（形参列表完全相同）的派生类构造函。生成如下类型构造函数：
+
+```c++
+Derived(parms) : Base(args){}
+```
+
+**using指示**
+
+使得某个特定的命名空间中所有名字都可见，这样我们无需再为它们添加任何前缀限定符了。
+
+```c++
+using namespace std;
+```
+
+尽量少使用using指示污染命名空间
+
+> 一般，使用using命令比使用using编译命令更安全，这是由于它只导入了指定的名称。如果该名称与局部名称发送冲突，编译器会发出提示。using编译命令导入所有的名称，包括可能并不使用的名称。如果与局部名称发生冲突，则局部名称将覆盖名称空间版本，而编译器不会发出警告 。另外，名称空间的开放性意味着名称空间的名称可能分散在多个地方，这使得难以准确地知道添加了哪些名称。
+
+少使用using指示
+
+```c++
+using namespace std;
+```
+
+多使用using声明
+
+```c++
+int x;
+std::cin >> x;
+```
+
+或者
+
+```c++
+using std::cin;
+using std::cout;
+using std::endl;
+int x;
+cin >>x;
+cout <<x<<endl;
+```
+
+### 🏷 :: 范围解析运算符
+
+**分类**
+
+1、全局作用域符(::name)：用于类型名称（类，类成员、成员函数、变量等），表示作用域为全局命名空间
+
+2、类作用域（class::name) : 用于表示指定类作用域范围是具体某个类
+
+3、命名空间作用域符（namespace::name)：用于表示指定类型的作用域范围是具体某个命名空间
+
+```c++
+int count = 11;  
+class A{
+  public: static int count;
+};
+int A::count = 21;
+void fun()
+{
+  int count = 31;
+  count = 32;
+}
+
+int main()
+{
+  cout<<::count;  //11
+  A::count;  //21
+  return 0;
+}
+```
+
+### 🏷 enum枚举类型
+
+限定作用域的枚举类型
+
+```c++
+enum class ioen{input, output, apppend};
+```
+
+不限定作用域的枚举类型
+
+```c++
+enum color (red, yellow, green);
+enum {floatPrec = 6, doublePrec = 10};
+```
+
+### 🏷 decltype
+
+作用于检查实体的声明类型或表达式的类型以及值分类
+
+```c++
+//尾置返回允许我们在参数列表之后声明返回类型
+template<typename It>
+auto fun(It beg, It end)->decltype(*beg)
+{
+  //处理序列
+  return *beg; //返回序列中的一个元素的引用
+}
+//为了使用模板参数成员必须使用typename
+template<typename It>
+auto f(It beg, It end)->typename remove_reference<decltype(*beg)>>::type
+{
+  return *beg;  // 返回一个元素的拷贝
+}
+```
+
+### 🏷 引用
+
+右值：当一个对象被当做右值时，用的是对象的内容，**右值要么是字面常量，要么是在表达式求值过程中创建的对象**
+
+左值：当一个对象被当做左值时，**用的是对象的身份**
+
+右值引用（&&）
+
+左值引用（&）
+
+```c++
+int i = 32;
+int &r = i;             //正确，r引用i
+int &&rr = i;           //错误，不能将一个右值引用到左值上
+int &r2 = i*32;         //错误，i*32是一个右值
+const int &r3 = i*32;   //正确，可以将一个const引用绑定到一个右值上
+int &&r4 = i*32;       //正确，将r4绑定到右值
+```
+
+### 🏷 智能指针
+
+智能指针的作用是管理一个指针，解决因申请空间而忘记释放，造成内存泄漏的问题。
+
+因为智能指针是一个类，当超出类的作用域时，类会自动调用析构函数，释放资源。不需要手动释放
+
+1、auto_ptr(C++98的方案，cpp11弃用)
+
+采用所有权模式。
+
+```c++
+auto_ptr<string> p1 (new string ("safasdf"));
+auto_ptr<string> p2;
+p2 = p1; // 不会报错
+```
+
+此时p2剥夺了p1的所有权，但是当程序运行时访问p1会报错。所以存在内存崩溃的问题。
+
+2、unique_ptr（替换auto_ptr)
+
+unique采用独占式拥有或严格拥有概念，保证同一时间内只有一个智能指针可以指向该对象，它对于避免资源协议特别有用
+
+```c++
+auto_ptr<string> p1 (new string ("safasdf"));
+auto_ptr<string> p2;
+p2 = p1; // 会报错
+```
+
+另外unique_ptr还有更聪明的地方，当程序视图将一个unique_ptr赋值给另一个是，如果员unique_ptr是一个临时右值，则允许这么做。如果原unique_ptr存在一段时间，编译器禁止
+
+```c++  
+unique_ptr<string> p1 (new string("adf"));
+unique_ptr<string p2;
+p2 = p1;   //not allowed
+unique_ptr<string> p3;
+p3 = unique_ptr<string>(new string("sdf"));   //allowed
+```
+
+3、shared_ptr
+
+实现共享式坐拥。多个智能指针可以指向相同对象，该对象和其相关资源会在”最后一个引用被销毁时“释放。它使用计数机制来表明资源被几个指针共享。可以通过成员函数use_count()来查看资源的所有者个数。除了可以通过new来构造，还可以通过传入auto_ptr, unique_ptr, weak_ptr来构造。当我们调用release()时，当前指针会释放资源所有权，计数器减一，当计数器等于0时，资源被释放
+
+Share_ptr是为了解决auto_ptr在对象所有权上的局限性
+
+**成员函数**：
+
+use_count返回引用计数个数
+
+unique返回是否独占所有权（use_count=1)
+
+swap交换两个shared_ptr对象
+
+reset释放内部对象的所有权或拥有对象的变更，会引起原有对象的引用计数的减少
+
+get返回内部对象（指针）。
+
+4、weak_ptr
+
+是一个不控制对象生命周期的智能指针。指向一个shared_ptr管理的对象，进行该对象的内存管理的是那个shared_ptr，weak_ptr只是提供对管理对象的一个访问手段。weak_ptr设计的目的是为了配合shared_ptr工作。它只可以从一个shared_ptr或另一个weak_ptr对象构造，它的构造和析构都不会引起计数的变化。
+
+weak_ptr是用来解决shared_ptr相互引用引起的死锁问题。如果两个shared_ptr指针相互引用，那么两个指针的引用计数永不归零，资源永不释放。它是对对象的一种若引用。
+
+```c++
+class B;
+class A
+{
+  public:
+      shared_ptr<B> pb_;
+      ~A();
+};
+class B
+{
+  public:
+      shared_ptr<A> pa_;
+      ~B();
+};
+void func()
+{
+  shared_ptr<B> pb(new B());
+  shared_ptr<A> pa(new A());
+  pb->pa_ = pa;
+  pa->pb_ = pb;
+}
+int main()
+{
+  fun();
+  return 0;
+}
+```
+
+fun中pa,pb相互引用
 
 
 
