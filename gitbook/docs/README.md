@@ -886,7 +886,7 @@ C++中不仅函数可以重载，运算符也可以重载
 
 ## 📚STL
 
-《STL源码解析》
+《STL源码解析》-侯捷
 
 ### 🏷 概述
 
@@ -930,3 +930,126 @@ STL采用二级配置器结构
 
 ![img](http://www.xyongs.cn/image/stl_malloc.png)
 
+### 🏷 迭代器
+
+根据STL中的分类，iterator包括：
+
+**输入迭代器**（Input Iterator）：通过对输入迭代器解除引用，它将引用对象，而对象可能位于集合中。最严格的输入迭代只能以只读方式访问对象。例如：istream。 
+
+**输出迭代器**（Output Iterator）：该类迭代器和Input Iterator极其相似，也只能单步向前迭代元素，不同的是该类迭代器对元素只有写的权力。例如：ostream, inserter。 
+
+以上两种基本迭代器可进一步分为三类：
+
+**前向迭代器**（Forward Iterator）：该类迭代器可以在一个正确的区间中进行读写操作，它拥有Input Iterator的所有特性，和Output Iterator的部分特性，以及单步向前迭代元素的能力。
+
+**双向迭代器**（Bidirectional Iterator）：该类迭代器是在Forward Iterator的基础上提供了单步向后迭代元素的能力。例如：list, set, multiset, map, multimap。
+
+**随机迭代器**（Random Access Iterator）：该类迭代器能完成上面所有迭代器的工作，它自己独有的特性就是可以像指针那样进行算术计算，而不是仅仅只有单步向前或向后迭代。例如：vector, deque, string, array。 
+
+**1 Input Iterators**
+
+Input Iterator只能逐元素的向前遍历，而且对元素是只读的，只能读取元素一次。通常这种情况发生在从标准输入设备（通常是键盘）读取数据时。
+
+下面是Input Iterator的可用操作列表：
+
+*iter: 只读访问对应的元素 
+
+iter->member: 只读访问对应元素的成员 
+
+++iter: 向前遍历一步（返回最新的位置) 
+
+iter++: 向前遍历一步（返回原先的位置） 
+
+iter1 == iter2: 判断两个迭代器是否相等 
+
+iter1 != iter2：判断两个迭代器是否不等 
+
+TYPE(iter): 复制迭代器 
+
+**2 Output Iterators**
+
+Output iterator跟Input Iterator相对应，只能逐元素向前遍历，而且对元素是只写的(*iter操作不能作为右值，只能作为左值)，只能写入元素一次。通常这种情况发生在向标准输出设备(屏幕或者打印机)写入数据时，或者利用inserter向容器中追加新元素时。
+
+3 Forward Iterators
+
+Forward Iterator是Input Iterator和Output Iterator的结合，虽然也只能逐元素向前遍历，但可以对元素进行读写操作。下面看Forward Iterator的可用操作列表：
+
+4 Bidirectional Iterators
+
+双向迭代器行为特征类似于Forward Iterator，只是额外增加了一个逐元素向后遍历的能力。所以对于双向迭代器可用的操作，除了包含Forward Iterator的所有操作外，多了一组向后遍历的操作：
+
+5 Random Access Iterators
+
+随机访问迭代器除了有双向迭代器的能力特征外，还可以进行元素随机访问。所以对于随机访问迭代器，增加了关于“迭代器运算”的一些操作。下面是除了双向迭代器的所有操作外，额外的操作列表：
+
+### 🏷 序列式容器
+
+#### vector
+
+存储连续的线性空间
+
+1、**迭代器**：Random Access Iterators。
+
+vector维护一个连续线性空间，支持随机存取。
+
+2、**构造与内存管理**
+
+![image](http://www.xyongs.cn/image/vector.png)
+
+当我们以push_back()将新元素插入vector尾端时，该函数首先检查是否还有备用空间，若有直接在备用空间中构造元素，并调整迭代器，若没有就扩充空间（重新配置、移动元素、释放原空间）
+
+vector是动态增加大小的，它以原来大小的两倍配置一个较大的空间，然后将原内容拷贝过来，然后在开始在原内容中构造新元素，并释放原空间。
+
+3、**操作**
+
+| 方法                        | 含义                           |
+| --------------------------- | ------------------------------ |
+| pop_back()                  | 将尾端元素拿掉，并调整大小     |
+| resize()                    | 调整容器大小                   |
+| capacity                    | 返回当前为vector分配的容量大小 |
+| reserve(i.begin(), i.end()) | 反转vector                     |
+| erase(it)                   | 删除某个位置上的元素           |
+| insert(pos, n,x)            | pos位置插入n个x元素            |
+
+#### list
+
+保存线性空间，每次插入或删除一个元素就配置或释放一个空间。
+
+1、**迭代器**
+
+Bidirectional Iterators
+
+list是一个双向链表，迭代器必须具备前移、后移能力
+
+2、**构成与内存管理**
+
+每次插入或删除一个元素就配置或释放一个空间，对于任何位置的插入或删除操作都是常数时间。
+
+3、**操作**
+
+| 方法                | 含义                                                     |
+| ------------------- | -------------------------------------------------------- |
+| push_front(it)      | 头结点插入元素                                           |
+| push_back(it)       | 尾结点插入                                               |
+| erase(it)           | 删除                                                     |
+| pop_front()         |                                                          |
+| Pop_back()          |                                                          |
+| clear()             |                                                          |
+| remove(val)         | 将数值为val所有元素移除                                  |
+| unique()            | 移除数值相同的连续元素，只有连续而相同的元素才会移除一个 |
+| transfer(pos, f, l) | 将[f,l) 内的元素移动到pos之前                            |
+| splice(pos,x)       | 将x接合与pos所指位置之前                                 |
+| merge(list &x)      | x 合并到*this上，前提：两者得有序                        |
+| find(f, e, 99)      | [f,e)范围内查找99                                        |
+
+
+
+#### deque
+
+#### stack
+
+#### queue
+
+#### heap
+
+#### priority_queue
