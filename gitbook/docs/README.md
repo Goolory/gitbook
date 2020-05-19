@@ -1001,7 +1001,7 @@ SGI 第一级配置器的 `allocate()` 和 `realloc()` 都是在调用`malloc()`
 
 二级配置器多了一些机制，避免太多小额区块造成内部碎片
 
-```c
+```cpp
 enum {__ALIGN = 8};
 enum {_MAX_BYTES = 128};
 enum {_NFREELISTS = __MAX_BYTES/__ALIGN}; //free-lists个数
