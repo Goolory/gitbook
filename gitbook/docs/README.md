@@ -910,6 +910,8 @@ STL提供六大组件
 
 STL采用二级配置器结构
 
+讨论的是---SGI空间配置器
+
 **1、第一级配置器**
 
 以malloc(), free(), realloc()等C函数执行实际内存配置、释放、重新配置等操作，若调用malloc(),realloc()不成功，会去循环调用“内存空间不足处理例程”，期望某次调用后获得足够的内存空间而圆满的完成任务，若还是不成功，返回异常
@@ -930,53 +932,220 @@ STL采用二级配置器结构
 
 ![img](http://www.xyongs.cn/image/stl_malloc.png)
 
+**一级配置器 __malloc_alloc_template 剖析**
+
+```c
+template<int inst>
+class __malloc_alloc_template
+{
+  private:
+  	//以下都是函数指针，所代表的函数将用来处理内存不足的情况
+  	// oom: out of memory
+  	static void *oom_malloc(size_t);
+  	static void *oom_realloc(void*, size_t);
+  	static void (* __malloc_alloc_oom_handler)();
+  public:
+  	static void * allocate(size_t n)
+    {
+      void *result = malloc(m);  //一级配置器直接使用malloc();
+      if (0 ==  result) result = oom_malloc(n); //无法满足时，使用oom_malloc
+      return result;
+    }
+  	static void deallocate(void *p, size_t)
+    {
+      free(p);  //一级配置器直接使用free释放
+    }
+  	static void *reallocate(void *p, size_t, size_t new_sz)
+    {
+      void *result = realloc(p, new_sz);  //一级配置器直接使用
+      if (0 == result) result = oom_realloc(p, new_sz);
+      return result;
+    }
+};
+tempate<int inst>
+void (* __malloc_alloc_template<inst>::__malloc_alloc_oom_handler)() = 0;
+
+tempate<int inst>
+void * __malloc_alloc_tempate<inst>::oom_malloc(size_t n)
+{
+  void (* my_alloc_handler)();
+  void *result;
+  
+  for (;;){  //不断尝试释放、配置、再释放、再配置
+    my_malloc_hander = __malloc_alloc_oom_handler;
+    if (0 == my_malloc_hander) {__THROW_BQD_ALLOC;}
+    (*my_malloc_hander)();  // 调用处理例程，企图释放内存
+    result = malloc(n);   //再次尝试配置内存
+    if (result) return (result);
+  }
+}
+
+tempate<int inst>
+void *__malloc_alloc_tempate<inst>::oom_realloc(void *p, size_t n)
+{
+  void (* my_alloc_handler)();
+  void *result;
+  for (;;){  //不断尝试释放、配置、再释放、再配置
+    my_malloc_hander = __malloc_alloc_oom_handler;
+    if (0 == my_malloc_hander) {__THROW_BQD_ALLOC;}
+    (*my_malloc_hander)();  // 调用处理例程，企图释放内存
+    result = realloc(p, n);   //再次尝试配置内存
+    if (result) return (result);
+  }
+}
+```
+
+SGI 第一级配置器的 `allocate()` 和 `realloc()` 都是在调用`malloc()` 和`realloc()`不成功后，调用`oom_malloc()` 和 `oom_realloc()`. 后两者都有内循环，不断调用 "内存不足处理例程".
+
+**第二级配置器 __default_alloc_template 剖析**
+
+二级配置器多了一些机制，避免太多小额区块造成内部碎片
+
+```c
+enum {__ALIGN = 8};
+enum {_MAX_BYTES = 128};
+enum {_NFREELISTS = __MAX_BYTES/__ALIGN}; //free-lists个数
+template<bool threads, int inst>
+class __default_alloc_template {
+private:
+  // 将bytes上调至8的倍数
+  static size_t ROUND_UP(size_t bytes){
+    return (((bytes) + __ALIGN-1) & ~(__ALIGN - 1))
+  }
+private:
+  union obj {  // free-lists节点构造
+    union obj * free_list_link;
+    char client_data[1];  
+  };
+private:
+  //16个free-lists
+  static obj * volatile free_list[_NFREELISTS];
+  //根据块大小，决定使用第n号free-list. n 从 1 开始
+  static size_ FREELIST_INDEX(size_t bytes){
+    return (((bytes) + __ALIGN-1) / __ALIGN - 1);
+  }
+  //返回一个大小为n的对象，并可能加入大小为n的其他区块到freelist
+  static void *refill(size_t n);
+  
+  //配置一大块空间，可容纳nobjs个大小为 size 的区块
+  // 如配置nobjs个区块有所不便，nobjs可能会降低
+  static char *chunk_alloc(size_t size, int &nobjs);
+  
+  static char *start_free;  //内存池起始位置
+  static char *end_free;
+  static size_t heap_size;
+public:
+  static void *allocate(size_t n);
+  static void deallocate(void *p, size_t n);
+  static void *reallocate(void *p, size_t old_sz, size_t new_sz);
+};
+
+//初始化
+template<bool threads, int inst>
+char *__default_alloc_template<threads, inst>::start_free = 0;
+template<bool threads, int inst>
+char *__default_alloc_template<threads, inst>::end_free = 0;
+template<bool threads, int inst>
+char __default_alloc_template<threads, inst>::heap_size = 0;
+template<bool threads, int inst>
+char __default_alloc_template<threads, inst>::obj *volatile 
+  __default_alloc_template<threads, inst>::free_list[__NFREELISTS] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+```
+
+**空间配置器函数 allocate()**
+
+```c
+static void * allocate(size_t n)
+{
+  obj *volatile * my_free_list;
+  obj *result;
+  
+  //大于128调用一级配置器
+  if (n > (size_t) __MAX_BYTES){
+    return (malloc_alloc::allocate(n));
+  }
+  //寻找16个free lists中合适的一个
+  my_free_list = free_list + FREELIST_INDEX(n);
+  result = *my_free_list;
+  if (0 == result)
+  {
+    //没有找到，准备重新填充free_list
+    void *r = refill(ROUND_UP(n));
+    return r;
+  }
+  //调整free list
+  *my_free_list = result->free_list_link;
+  return (result);
+}
+```
+
+**重新填充free lists**
+
+当`free list`中没有可以的区块了时，就调用 `refill()` 新的空间取自内存池，省缺的取得20个新节点。
+
+**内存池**
+
+当内存足够时，直接调出20个区块返回给`free list`, 如果不足20个，但是足够供应一个以上，就拨出这不足20个区块空间出去。
+
+若完全没有空间了，便需要利用`malloc`在`heap`上配置内存，请求的内存为需求量的两倍，再加上一个随着配置次数增大而愈来愈多的附加量
+
+**例**
+
+假设，程序一开始就调用`chunk__alloc(32,20)`,于是`malloc()`配置40个32bytes区块，其中第1个交出，另19个交给`free_list[3]`维护，余20个留个内存池。
+
+接下来程序调用`chunk_alloc(64, 20)`，此时`free_list[7]`空空如也，必须向内存池要求支持。内存池也只有 (32*20)/64 = 10个64bytes区块，就把这10个区块返回，第1个交给客端，余9个有`free_list[7]`维护。此时内存池为空，在申请是要加上**附加量**
+
+另：若system_heap空间不足，想法去其它内存中取，若最后还是失败返回bad_alloc异常。
+
+注：`chunk_alloc(b, s)` 向内存池中取空间 s个大小为b bytes
+
 ### 🏷 迭代器
 
-根据STL中的分类，iterator包括：
+根据STL中的分类，`iterator`包括：
 
-**输入迭代器**（Input Iterator）：通过对输入迭代器解除引用，它将引用对象，而对象可能位于集合中。最严格的输入迭代只能以只读方式访问对象。例如：istream。 
+**输入迭代器**（`Input Iterator`）：通过对输入迭代器解除引用，它将引用对象，而对象可能位于集合中。最严格的输入迭代只能以只读方式访问对象。例如：`istream`。 
 
-**输出迭代器**（Output Iterator）：该类迭代器和Input Iterator极其相似，也只能单步向前迭代元素，不同的是该类迭代器对元素只有写的权力。例如：ostream, inserter。 
+**输出迭代器**（`Output Iterator`）：该类迭代器和`Input Iterator`极其相似，也只能单步向前迭代元素，不同的是该类迭代器对元素只有写的权力。例如：`ostream, inserter`。 
 
 以上两种基本迭代器可进一步分为三类：
 
-**前向迭代器**（Forward Iterator）：该类迭代器可以在一个正确的区间中进行读写操作，它拥有Input Iterator的所有特性，和Output Iterator的部分特性，以及单步向前迭代元素的能力。
+**前向迭代器**（`Forward Iterator`）：该类迭代器可以在一个正确的区间中进行读写操作，它拥有`Input Iterator`的所有特性，和`Output Iterator`的部分特性，以及单步向前迭代元素的能力。
 
-**双向迭代器**（Bidirectional Iterator）：该类迭代器是在Forward Iterator的基础上提供了单步向后迭代元素的能力。例如：list, set, multiset, map, multimap。
+**双向迭代器**（`Bidirectional Iterator`）：该类迭代器是在`Forward Iterator`的基础上提供了单步向后迭代元素的能力。例如：`list, set, multiset, map, multimap`。
 
-**随机迭代器**（Random Access Iterator）：该类迭代器能完成上面所有迭代器的工作，它自己独有的特性就是可以像指针那样进行算术计算，而不是仅仅只有单步向前或向后迭代。例如：vector, deque, string, array。 
+**随机迭代器**（`Random Access Iterator`）：该类迭代器能完成上面所有迭代器的工作，它自己独有的特性就是可以像指针那样进行算术计算，而不是仅仅只有单步向前或向后迭代。例如：`vector, deque, string, array`。 
 
 **1 Input Iterators**
 
-Input Iterator只能逐元素的向前遍历，而且对元素是只读的，只能读取元素一次。通常这种情况发生在从标准输入设备（通常是键盘）读取数据时。
+`Input Iterator`只能逐元素的向前遍历，而且对元素是只读的，只能读取元素一次。通常这种情况发生在从标准输入设备（通常是键盘）读取数据时。
 
-下面是Input Iterator的可用操作列表：
+下面是`Input Iterator`的可用操作列表：
 
-*iter: 只读访问对应的元素 
+`*iter`: 只读访问对应的元素 
 
-iter->member: 只读访问对应元素的成员 
+`iter->member`: 只读访问对应元素的成员 
 
-++iter: 向前遍历一步（返回最新的位置) 
+`++iter`: 向前遍历一步（返回最新的位置) 
 
-iter++: 向前遍历一步（返回原先的位置） 
+`iter++`: 向前遍历一步（返回原先的位置） 
 
-iter1 == iter2: 判断两个迭代器是否相等 
+`iter1 == iter2`: 判断两个迭代器是否相等 
 
-iter1 != iter2：判断两个迭代器是否不等 
+`iter1 != iter2`：判断两个迭代器是否不等 
 
-TYPE(iter): 复制迭代器 
+`TYPE(iter)`: 复制迭代器 
 
 **2 Output Iterators**
 
-Output iterator跟Input Iterator相对应，只能逐元素向前遍历，而且对元素是只写的(*iter操作不能作为右值，只能作为左值)，只能写入元素一次。通常这种情况发生在向标准输出设备(屏幕或者打印机)写入数据时，或者利用inserter向容器中追加新元素时。
+`Output iterator`跟`Input Iterator`相对应，只能逐元素向前遍历，而且对元素是只写的(`*iter`操作不能作为右值，只能作为左值)，只能写入元素一次。通常这种情况发生在向标准输出设备(屏幕或者打印机)写入数据时，或者利用`inserter`向容器中追加新元素时。
 
 3 Forward Iterators
 
-Forward Iterator是Input Iterator和Output Iterator的结合，虽然也只能逐元素向前遍历，但可以对元素进行读写操作。下面看Forward Iterator的可用操作列表：
+`Forward Iterator`是`Input Iterator`和`Output Iterator`的结合，虽然也只能逐元素向前遍历，但可以对元素进行读写操作。下面看`Forward Iterator`的可用操作列表
 
 4 Bidirectional Iterators
 
-双向迭代器行为特征类似于Forward Iterator，只是额外增加了一个逐元素向后遍历的能力。所以对于双向迭代器可用的操作，除了包含Forward Iterator的所有操作外，多了一组向后遍历的操作：
+双向迭代器行为特征类似于`Forward Iterator`，只是额外增加了一个逐元素向后遍历的能力。所以对于双向迭代器可用的操作，除了包含`Forward Iterator`的所有操作外，多了一组向后遍历的操作：
 
 5 Random Access Iterators
 
@@ -987,6 +1156,43 @@ Forward Iterator是Input Iterator和Output Iterator的结合，虽然也只能�
 #### vector
 
 存储连续的线性空间
+
+**vector的数据结构**
+
+```c++
+template<class T, class Alloc = alloc>
+{
+  protected:
+  	iterator start;  //表示目前使用空间的头
+  	iterator finish;  //表示目前使用空间的尾
+  	iterator end_of_storage;  //表示目前可以空间的尾
+}
+```
+
+vector**调用构造函数的操作流程**
+
+```c
+//构造函数，指定大小n，初值 value
+vector<size_type n, const T& value> {fill_initialize(n, value);}
+
+//填充并予以初始化
+fill_initialize(size_type n, const T& value)
+{
+  start = allocate_and_fill(n, value);
+  finish = start + n;
+  end_of_storage = finish;
+}
+
+//配置而后填充
+iterator allocate_and_fill(size_type n, const T& x)
+{
+  iterator result = data_allocator::allocate(n);  // 配置n个元素的空间
+  uninitialized_fill_n(result, n, x);
+  return result;
+}
+```
+
+
 
 1、**迭代器**：Random Access Iterators。
 
