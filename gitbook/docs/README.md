@@ -1442,7 +1442,11 @@ struct TreeNode
 
 左右子树高度差不超过1，左右子树也是平衡二叉树
 
-### 🏷 二叉搜索树🌲
+**旋转**：如果在AVL树中进行插入或删除节点操作后，可能导致AVL树失去平衡。这种失去平衡可以概括为4种姿态：LL（左左），LR， RR，RL。
+
+参考：https://www.pdai.tech/md/algorithm/alg-basic-tree-balance.html
+
+### 🏷 二叉搜索树(BST)🌲
 
 满足平衡树要求，且每个节点中其左子树的数据都要小于等于根节点，右子树的数据都大于根节点
 
@@ -1525,7 +1529,60 @@ B+树是一种数据结构，是个n叉树，每个节点通常有很多个孩�
 
 ![img](https://raw.githubusercontent.com/wangkuiwu/datastructs_and_algorithm/master/pictures/tree/huffman/03.jpg)
 
+### 🏷 图
 
+**定义**：是有顶点和有穷非空集合和顶点之间边的集合组成，通常表示为：G(V, E)，G表示一个图，V表示顶点集合，E表示边集合
+
+**顶点的度**：顶点Vi的度就是与Vi相连边的个数。对于有向图来说，有分入度和出度。
+
+**邻接**：两顶点存在一条边<v1,v2>
+
+**路径**：v1可以通过若干条边到达v2，的若干条边组成的集合
+
+**连通**：v1可以通过若干条边到达v2
+
+**权**：边上的权重
+
+#### 种类：
+
+无向图：
+
+如果图中任意两个顶点之间的边都是无向边---无向图。(v1,v2)
+
+有向图：
+
+任意两个顶点之间的边都是有向边，<v1,v2>
+
+完全图：
+
+* 无向完全图： 在无向图中， 任意两个顶点存在边
+* 有向完全图：在有向图中，任意两个顶点都有互为相反的两条边。
+
+#### 存储结构
+
+**邻接矩阵法**：
+
+无向图：
+
+![img](http://www.xyongs.cn/image/graph1.png)
+
+无向图：
+
+![img](http://www.xyongs.cn/image/graph2.png)
+
+**邻接表法：**
+
+无向图：
+
+![img](http://www.xyongs.cn/image/graph3.png)
+
+有向图：
+
+![img](http://www.xyongs.cn/image/graph4.png)
+
+带权图：
+
+![img](http://www.xyongs.cn/image/graph5.png)
 
 
 
