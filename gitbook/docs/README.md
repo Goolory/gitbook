@@ -1137,15 +1137,15 @@ static void * allocate(size_t n)
 
 `Output iterator`跟`Input Iterator`相对应，只能逐元素向前遍历，而且对元素是只写的(`*iter`操作不能作为右值，只能作为左值)，只能写入元素一次。通常这种情况发生在向标准输出设备(屏幕或者打印机)写入数据时，或者利用`inserter`向容器中追加新元素时。
 
-3 Forward Iterators
+**3 Forward Iterators**
 
 `Forward Iterator`是`Input Iterator`和`Output Iterator`的结合，虽然也只能逐元素向前遍历，但可以对元素进行读写操作。下面看`Forward Iterator`的可用操作列表
 
-4 Bidirectional Iterators
+**4 Bidirectional Iterators**
 
 双向迭代器行为特征类似于`Forward Iterator`，只是额外增加了一个逐元素向后遍历的能力。所以对于双向迭代器可用的操作，除了包含`Forward Iterator`的所有操作外，多了一组向后遍历的操作：
 
-5 Random Access Iterators
+**5 Random Access Iterators**
 
 随机访问迭代器除了有双向迭代器的能力特征外，还可以进行元素随机访问。所以对于随机访问迭代器，增加了关于“迭代器运算”的一些操作。下面是除了双向迭代器的所有操作外，额外的操作列表：
 
@@ -2039,6 +2039,10 @@ MSL（Maximum Segment Lifetime），TCP允许不同的实现可以设置不同�
 建立连接的时候， 服务器在LISTEN状态下，收到建立连接请求的SYN报文后，把ACK和SYN放在一个报文里发送给客户端。 
 
 而关闭连接时，服务器收到对方的FIN报文时，仅仅表示对方不再发送数据了但是还能接收数据，而自己也未必全部数据都发送给对方了，所以己方可以立即关闭，也可以发送一些数据给对方后，再发送FIN报文给对方来表示同意现在关闭连接，因此，己方ACK和FIN一般都会分开发送，从而导致多了一次。
+
+**TCP状态转移图**
+
+![img](http://xyongs.cn/image/TCP-6-3.png)
 
 **如果已经建立了连接，但是客户端突然出现故障了怎么办？**
 
