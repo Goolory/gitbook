@@ -2480,9 +2480,150 @@ TCP 流控制过程如图所示。
 
 #### 网络编程
 
-Socket
+##### I/O模型
+
+https://github.com/CyC2018/CS-Notes/blob/master/docs/notes/Socket.md
+
+一个输入操作通常包含两个阶段
+
+* 等待数据准备好
+* 从内核向进程复制数据
+
+对于一个套接字上的输入操作，第一步通常涉及等待数据从网络中到达。当所等待的数据到达时，它被复制到内核的某个缓冲区。第二部就是把数据从内核缓冲区复制到应用的进程缓冲区。
+
+Unix有5中I/O模型
+
+* 阻塞式I/O
+* 非阻塞式I/O
+* I/O复用 (select 和poll)
+* 信号驱动式I/O （SIGIO）
+* 异步I/O （AIO）
+
+###### 阻塞式IO
+
+应用进程被阻塞，直到数据从内核缓冲区复制到应用进程缓冲区才返回。
+
+应该注意到，在阻塞的过程中，其他的应用进程还可以执行，因此阻塞不意味着整个操作系统都被阻塞。因为其他进程还可以被执行，所以不消化CPU时间，这种模型的CPU利用率比较高。
+
+![img](http://xyongs.cn/image/IO-1-6-7.png)
+
+###### 非阻塞IO
+
+应用进程在执行系统调用之后，内核返回一个错误码。应用进程可以继续执行，但是需要不间断的执行系统调用来获知IO是否完成，这种方式称之为**轮询**。
+
+由于CPU要处理更多的系统调用，因此这种模型的CPU利用率较低。
+
+![img](http://xyongs.cn/image/IO-2-6-7.png)
+
+###### I/O复用
+
+也称事件驱动IO，在单个线程里同时监控多个套接字，通过select或poll轮询负责所有socket，当某个socket有数据到达了，就通知用户进程
+
+![img](http://xyongs.cn/image/IO-3-6-7.png)
+
+可以看出，进程阻塞在select调用上，等待有套接字变为可读；当有套接字有可读以后，调用recvfrom把数据报从内核中复制到用户进程缓冲区，此时进程阻塞在IO执行的第二个阶段。
+
+**IO复用的特点是进行了两个系统调用，进程显示阻塞在select/poll上，再是阻塞在读操作的第二阶段上。**
+
+###### 信号驱动式I/O
+
+![img](http://xyongs.cn/image/IO-4-6-7.png)
+
+信号驱动就是让内核在描述符就绪时发送SIGIO型号通知用户进程。
+
+1. 开启socket的信号驱动IO功能，
+2. 通过`sigaction`系统调用注册SIGIO型号处理函数--该系统调用会立即返回
+3. 当数据准备好事，内核会为该进程产生一个SIGIO信号
+4. 应用程序调用recvfrom
+
+所以，**信号驱动式IO的特点就是在等待数据ready期间进程不被阻塞，当收到信号通知时再阻塞并拷贝数据。**
+
+###### 异步I/O
+
+![img](http://xyongs.cn/image/IO-5-6-7.png)
+
+1. 用户发起`aio_read`操作后，该系统调用立即返回
+2. 内核会自己等待数据ready，并自动拷贝到用户内存。整过程完成之后，内核向用户进程发送一个信号，通知IO操作完成
+
+所以，**异步IO的特点是IO执行的两个阶段都由内核去完成，用户进程无需干预，也不会被阻塞。**
+
+##### Socket
 
 ![img](http://xyongs.cn/image/socket-6-5.jpg)
+
+**创建**
+
+```c++
+<sys/socket.h>
+int socket(int af, int type, int protocol);
+// af:地址族   AF_INET(IPv4)   AF_INET6(IPv6)
+// type:      SOCK_STREAM(流格式套接字)， SOCK_DGRAM（数据报套接字）
+// protocol:   IPPROTO_TCP   
+```
+
+**bind()函数**
+
+服务器将特定的套接字与特定的IP地址端口绑定起来
+
+```c++
+int bind(int sock, struct sockadd *addr, socklen_t addrlen);
+```
+
+**connect()函数**
+
+客户端将套接字与端口绑定
+
+```c
+int connect(int sock, struct sockaddr *serv_add, socklen_t addrlen);
+```
+
+**listen()函数**
+
+服务器让套接字进入监听状态
+
+```c
+int listen(int sock, int backlog);  //Linux
+```
+
+sock 为需要进入监听状态的套接字，backlog 为请求队列的最大长度。
+
+**请求队列**
+
+当套接字正在处理客户端请求时，如果有新的请求进来，套接字是没法处理的，只能把它放进缓冲区，待当前请求处理完毕后，再从缓冲区中读取出来处理。如果不断有新的请求进来，它们就按照先后顺序在缓冲区中排队，直到缓冲区满。这个缓冲区，就称为请求队列（Request Queue）。
+
+**accept() 函数**
+
+当套接字处于监听状态时，可以通过 accept() 函数来接收客户端请求。它的原型为：
+
+```c
+int accept(int sock, struct sockaddr *addr, socklen_t *addrlen);  //Linux
+```
+
+它的参数与 listen() 和 connect() 是相同的：sock 为服务器端套接字，addr 为 sockaddr_in 结构体变量，addrlen 为参数 addr 的长度，可由 sizeof() 求得。
+
+**write()函数**
+
+Linux 不区分套接字文件和普通文件，使用 write() 可以向套接字中写入数据，使用 read() 可以从套接字中读取数据。
+
+```c
+ssize_t write(int fd, const void *buf, size_t nbytes);
+```
+
+fd 为要写入的文件的描述符，buf 为要写入的数据的缓冲区地址，nbytes 为要写入的数据的字节数。
+
+**read() 函数**
+
+```c
+ssize_t read(int fd, void *buf, size_t nbytes);
+```
+
+fd 为要读取的文件的描述符，buf 为要接收数据的缓冲区地址，nbytes 为要读取的数据的字节数。
+
+[**socket**](http://c.biancheng.net/socket/)**缓冲区**
+
+每个 socket 被创建后，都会分配两个缓冲区，输入缓冲区和输出缓冲区。
+
+> write()/send() 并不立即向网络中传输数据，而是先将数据写入缓冲区中，再由TCP协议将数据从缓冲区发送到目标机器。一旦将数据写入到缓冲区，函数就可以成功返回，不管它们有没有到达目标机器，也不管它们何时被发送到网络，这些都是TCP协议负责的事情。
 
 ### 🏷 网络层
 
