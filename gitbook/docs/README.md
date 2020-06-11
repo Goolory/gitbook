@@ -1940,6 +1940,8 @@ MD5是输入不定长度信息，输出固定长度128-bits的算法，经过程
 
 进程是资源分配的基本单位，是具有一定独立功能的程序，在数据集上进行一次执行
 
+进程是对运行的程序的封装，实现了操作系统的并发；
+
 **进程控制块**
 
 为了描述和控制进程的运行，系统为每个进程定义了一个数据结构--进程控制块（PCB）。它是进程重要的组成部分，记录了操作系统所需的、用于描述进程的当前状态和控制进程的全部信息。操作系统就是根据进程的PCB来感知进程的存在，并依次对进程进程管理和控制。PCB是进程存在的唯一标识符
@@ -1981,6 +1983,14 @@ PCB包括：
 线程是独立调度的基本单位，是CPU调度和分配的最小单位
 
 一个进程可以有多个线程，它们共享进程资源
+
+**有了进程为什么还要线程**？
+
+线程产生的原因：
+
+尽快可以使多个程序并发执行，以提高资源的利用率和系统的吞吐量；但是有些缺陷，进程在同一时间内只能干一件事，进程在执行的过程中如果阻塞，整个进程就会挂起，即使有些工作不依赖等待的资源，任然不能执行。
+
+因此操作系统引入了颗粒度更小的线程，作为并发执行的基本单位，从而减少程序在并发执行时所付出的时空开销，提高并发性。
 
 #### 进程线程区别
 
@@ -2045,7 +2055,212 @@ PCB包括：
 
 ![img](http://xyongs.cn/image/process2-6-9.png)
 
-#### 实时系统
+**实时系统**：
+
+> 实时系统要求一个请求在一个确定时间内得到响应。
+>
+> 分为硬实时和软实时，前者必须满足绝对的截止时间，后者可以容忍一定的超时。
+
+#### 进程同步与进程通信的区别
+
+* 进程同步：控制多个进程按照一定顺序执行
+* 进程通信：进程间传输信息
+
+进程通信是一种手段，而进程同步是一种目的。可以说，为了能达到进程同步的目的，需要让进程进行通信，传输一些进程同步所需要的信息。
+
+#### 进程同步
+
+进程同步方式：信号量、互斥量、条件变量、管程
+
+##### 临界区
+
+对临界区资源进行访问的那段代码称为临界区
+
+为了互斥访问临界资源，每个进程在进入临界区之前，需要先进行检测。
+
+##### 同步与互斥
+
+* 同步：多个进程因为合作产生的直接制约关系，使得进程有一定的先后执行关系。
+* 互斥：多个进程在同一时刻只能有一个进程进入临界区。
+
+##### 信号量
+
+信号量是一个整型变量，可以对其执行down和up操作，即PV操作
+
+* down：如果信号量大于0，执行-1操作；如果信号量等于0，进程睡眠，等待信号量大于0；
+* up：对信号量执行+1操作，唤醒睡眠的程序让其完成down操作。
+
+例子：[原文](https://www.jianshu.com/p/4fdad407068b)
+
+```c++
+#include<stdio.h>  //printf
+#include<stdlib.h>  //exit(), EXIT_SUCCESS
+#include<pthread.h>  //pthread_create(), pthread_join()
+#include<semaphore.h>  //sem_init()
+
+sem_t binSem;
+void *helloWorld(void* arg);
+int main()
+{
+    int res = 0;
+    res = sem_init(&binSem, 0, 0);
+    if (res){
+        printf("Semaphore initialization failed!!\n");
+        exit(EXIT_FAILURE);
+    }
+    //创建线程
+    pthread_t thdHelloWorld;
+    res = pthread_create(&thdHelloWorld, NULL, helloworld, NULL);//1、绑定线程对象；2、设置写出属性；3、绑定函数名；4、函数参数
+    if(res)
+    {
+        printf("thread creation failed!!\n");
+        exit(EXIT_FAILURE);
+    }
+    while(1)
+    {
+        sem_post(&binSem);
+        printf("In main, sleep several seconds.\n");
+        sleep(1);
+    }
+    void *threadResult;
+    res = pthread_join(thdHelloWorld, &threadResult);
+    if (res) {
+         printf("Thread join failed!!\n");
+         exit(EXIT_FAILURE);
+     }
+     exit(EXIT_SUCCESS);
+    
+}
+void* helloWorld(void* arg) {
+    while(1) {
+         // Wait semaphore
+         sem_wait(&binSem);
+         printf("Hello World\n");
+     }
+}
+```
+
+##### 管程
+
+提出目的：分离互斥和条件同步的关注
+
+什么是管程：由临界区有若干条件变量组成的用于管理并发访问共享数据的方法
+
+#### 经典同步问题
+
+##### 生产者消费者问题
+
+[原文](https://www.cnblogs.com/haippy/p/3252092.html)
+
+单生成者-单消费者模型（其他模型见原文）
+
+单生成者-单消费者模型，只有一个生产者一个消费者，生产者不停的往产品库中放入产品，消费者则从产品库中取走产品，产品库容积有限，只能容纳一定数目的产品，如果生成者生成速度过快，则需要等消费者取走产品后，产品库不为空才能继续生成，反之，如果消费者消费过快，也需要等待生产者生成
+
+```c++
+#include<unistd.h>
+#include<cstdlib>
+#include<condiation_variable>
+#include<iostream>
+#include<mutex>
+#include<thread>
+
+static const int KItemRepositorySize = 10; //Item buffer size;
+static const int KItemToProduce = 100;   //How many items we plan to produce;
+struct ItemRepository
+{
+    int item_buffer[KItemRepositorySize];  //产品缓冲区，配合read_position 和write_position模型环形队列
+    size_t read_position;// 消费者读产品位置
+    size_t write_position;  //生产者写入位置
+    std::mutex mtx;  // 互斥量，保护产品缓冲区
+    std::condition_variable repo_not_full;   //条件变量，指示产品缓冲区不为满
+    std::condition_variable repo_not_empty;  //条件变量，指示产品缓冲区不为空
+} gItemRepository; // 产品库全局变量，生产者和消费者操作该变量
+typedef struct ItemRepository ItemRepository;
+
+void ProduceItem(ItemRepository* ir, int item)
+{
+    std::unique_lock<std::mutex> lock(ir->mtx);
+    while(((ir->write_position + 1) % KItemRepositorySize) == ir->read_position)  //满
+    {
+        std::cout << "Producer is waiting for an empty slot...\n";
+        (ir->repo_not_full).wait(lock);  //生产者等待"产品库缓冲区不为满"这一条件发生.
+    }
+    (ir->item_buffer)[ir->write_position] = item; // 写入产品
+    (ir->write_position)++;  //写入位置后移
+    
+    if (ir->write_position == KItemRepositorySize)  //写入位置在最后，则重置为初始位置
+    {
+        ir->write_position = 0;
+    }
+    (ir->repo_not_empty).notify_all();  //通知消费者产品库不为空。
+    lock.unlock();  // 解锁
+}
+
+int ConsumeItem(ItemRepository *ir)
+{
+    int data;
+    std::unique_lock<std::mutex> lock(ir->mtx);
+    while(ir->write_position == ir->read_position)
+    {
+        std::cout << "Consumer is waiting for items...\n";
+        (ir->repo_not_empty).wait(lock);  // 消费者等待"产品库缓冲区不为空"这一条件发生.
+    }
+    data = (ir->item_buffer)[ir->read_position];  // 读取某一产品
+    (ir->read_position)++;
+    if (ir->read_position >= KItemRepositorySize)  
+    	ir->read_position = 0;
+    (ir->repo_not_full).notify_all();
+    lock.unlock();
+    return data;
+}
+
+void ProduceTask() //生产者任务
+{
+    for(int i = 1; i <= kItemsToProduce; ++i)
+    {
+        std::cout << "Produce the " << i << "^th item..." << std::endl;
+        ProduceItem(&gItemRepository, i); // 循环生产 kItemsToProduce 个产品.
+    }
+}
+void ConsumerTask() // 消费者任务
+{
+    static int cnt = 0;
+    while(1) {
+        sleep(1);
+        int item = ConsumeItem(&gItemRepository); // 消费一个产品.
+        std::cout << "Consume the " << item << "^th item" << std::endl;
+        if (++cnt == kItemsToProduce) break; // 如果产品消费个数为 kItemsToProduce, 则退出.
+    }
+}
+void InitItemRepository(ItemRepository *ir)
+{
+    ir->write_position = 0; // 初始化产品写入位置.
+    ir->read_position = 0; // 初始化产品读取位置.
+}
+
+int main()
+{
+    InitItemRepository(&gItemRepository);
+    std::thread producer(ProducerTask); // 创建生产者线程.
+    std::thread consumer(ConsumerTask); // 创建消费之线程.
+    producer.join();
+    consumer.join();
+}
+```
+
+
+
+
+
+#### 进程通信
+
+管道、系统IPC（消息队列、信号量、共享内存），套接字socket
+
+#### 线程同步
+
+线程同步方式：信号量、互斥量、条件变量
+
+
 
 ### 🏷 地址空间
 
