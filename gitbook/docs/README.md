@@ -230,6 +230,43 @@ c/c++不提供垃圾回收机制，因此需要对堆中的数据进行及时的
 
 ### 🏷 #pragma pack(n)
 
+为什么要进行内存对齐？
+
+尽管内存是以字节为单位，但是到部分处理器并不是按字节快来存取内存的，它一般会以双字节，4字节，8字节，16，甚至32字节来存取内存（内存存取粒度）
+
+假如没有内存对齐机制，数据可以任意存放，现在一个int变量存放在从地址1开始的联系四个字节地址中，该处理器去取数据时，要先从0地址开始读取第一个4字节块,剔除不想要的字节（0地址）,然后从地址4开始读取下一个4字节块,同样剔除不要的数据（5，6，7地址）,最后留下的两块数据合并放入寄存器.这需要做很多工作.
+
+```c
+//32位系统
+#include<stdio.h>
+struct
+{
+    int i;    
+    char c1;  
+    char c2;  
+}x1;
+
+struct{
+    char c1;  
+    int i;    
+    char c2;  
+}x2;
+
+struct{
+    char c1;  
+    char c2; 
+    int i;    
+}x3;
+
+int main()
+{
+    printf("%d\n",sizeof(x1));  // 输出8
+    printf("%d\n",sizeof(x2));  // 输出12
+    printf("%d\n",sizeof(x3));  // 输出8
+    return 0;
+}
+```
+
 设定结构体、联合体以及类成员变量以n字节方式对齐
 
 ```c++
@@ -579,6 +616,24 @@ const int &r3 = i*32;   //正确，可以将一个const引用绑定到一个右�
 int &&r4 = i*32;       //正确，将r4绑定到右值
 ```
 
+### 🏷 数组
+
+#### 二维动态数组的申请与释放
+
+```c
+size_t row, col;
+cin >> row >> col;
+int **Table = new int*[row];
+for (int i = 0; i < row; i++)
+    Table[i] = new int[col];
+// 释放
+for (int i = 0; i < row; i++)
+    delete[] Table[i];
+delete[] Table;
+```
+
+
+
 ### 🏷 智能指针
 
 智能指针的作用是管理一个指针，解决因申请空间而忘记释放，造成内存泄漏的问题。
@@ -742,6 +797,106 @@ class Cparent
 }
 ```
 
+### 🏷拷贝构造函数与赋值运算符
+
+[C++ 拷贝构造函数和赋值运算符](https://www.cnblogs.com/wangguchangqing/p/6141743.html)
+
+在默认情况下（用户没有定义，但是也没有显示的删除），编译期会自动的隐式的生成一个拷贝构造函数和赋值运算符。但是用户可以使用`delete`来指定不生成这两个函数。
+
+```c++
+class Person
+{
+public:
+    Person(const Person& p) = delete;
+    Person& operator=(const Person& p) = delete;
+}
+```
+
+**拷贝构造函数必须以引用的方式传递参数**。这是因为，在值传递的方式传递一个函数时，会调用拷贝构造函数生成函数的实参。如果拷贝构造函数的参数任然是以值的方式，则就会无限循环的调用下去，直到栈的溢出。
+
+```c
+class Person
+{
+public:
+    Person(const Person& p)  //拷贝构造
+    {
+        ptr = new int;
+        *ptr = *(p.ptr);
+    }
+    Person& operator=(const Person& p)
+    {
+        delete ptr;
+        ptr = new int;
+        *ptr = *(p.ptr);
+        return *this;
+	}
+private:
+    int *ptr;
+}
+```
+
+**何时调用？**
+
+拷贝构造函数和赋值运算符的行为比较相似，都是将一个对象的值复制给另一个对象；但是结果却有些不同，拷贝构造函数使用传入的值生成一个新的对象的实例，而复制运算符是将对象的值复制给一个已经存在的对象实例。
+
+<font color="red">调用的是拷贝构造函数还是赋值运算符，主要是看是否有新的对象实例产生。</font>
+
+#### 浅拷贝与深拷贝
+
+浅拷贝：当类数据成员有指针时，浅拷贝只是单纯的将一个指针的地址赋值给另一个类成员指针。这样会有问题，当其中一个析构了该地址，那么另外一个也没有了。
+
+深拷贝：他会重新申请一个区域来存放，被复制的指针所指向的值。两个东西完全独立。
+
+```c++
+#include <iostream>
+
+using namespace std;
+
+class Person
+{
+private:
+    int *ptr;
+public:
+    Person(int t){
+        ptr = new int;
+        *ptr = t;
+    }
+    Person(const Person& p){
+        ptr = new int;
+        *ptr = *p.ptr;
+    }
+    Person& operator = (const Person& p){
+        ptr = new int;  // 深拷贝
+        *ptr = *p.ptr;  // 浅拷贝   删除ptr=p.ptr;  两个指针指向同一位置。
+        return *this;
+    }
+    void printPer(){
+        cout << *ptr << endl;
+    }
+    void change(int i){
+        *ptr = i;
+    }
+    ~Person(){
+        delete ptr;
+    }
+};
+
+int main()
+{
+    int i = 10;
+    Person p(i);
+    p.printPer();
+    Person p1(1000);
+    p1.printPer();
+    p = p1;
+    p1.change(999);
+    p.printPer();
+
+}
+```
+
+
+
 ### 🏷 析构函数
 
 析构函数与构造函数对应，当对象结束其生命周期，如对象所在的函数已调用完毕时，系统会自动执行析构函数。
@@ -904,7 +1059,47 @@ int a[4] = {11,2,33,4};
 sort(a, a+4, [=](int x, int y)->bool {return x%10 < y % 10;});
 ```
 
+### 🏷 面试问题
 
+**当`i`是一个整数的时候`++i`和`i++`哪个更快一点？ `i++`和`++i`的区别是什么？**
+
+A：理论上是`++i`更快；实际上与编译器优化有关，通常几乎无区别。
+
+```c
+// i++代码实现
+int operator++(int)
+{
+    int temp = *this;
+    ++*this;
+    return temp;
+} // 返回一个int型的对象本身
+// ++i
+int& operator++()
+{
+    *this += 1;
+    return *this;
+} // 返回一个int型对象引用。
+//可以不停的嵌套++i；
+++(++i)
+```
+
+`i++`返回的是`i`的值， `++i`返回的是 `i+1`的值
+
+```c
+int i = 1;
+printf("%d, %d\n", ++i, ++i);  //3, 3   ++i 返回的是*this 会与this指向的内容有关
+printf("%d, %d\n", ++i, i++);  //5, 3   i++ 返回的是temp，一个预先保留的值
+printf("%d, %d\n", i++, i++);  //6, 5
+printf("%d, %d\n", i++, ++i);  //8, 9
+
+注意：上述与输出与编译器类型有关，有些输出不一样，有些编译器会报错
+```
+
+**auto_ptr能作为vector的元素吗？为什么？**
+
+A：不可以。
+
+当复制一个auto_ptr时，它所指向的元素的对象的所有权被交付到被复制的auto_ptr上面，而它自身被复制设置为null。复制一个auto_ptr意味着改变它的值。出错。
 
 ## 📚STL
 
@@ -1435,6 +1630,12 @@ hash函数（散列函数）：除留取余法
 * multimap: 底层红黑树，key可以重复
 * Hashmap: 底层hashtable
 * unordered_map:底层hashtable，C++11添加，空间复杂度比hashmap高 是C++11用来代替hashmap。支持复杂的对象做kay，key不重复
+
+### 🏷 算法 
+
+#### Sort
+
+在数据量大时采用Quick Sort，分段递归排序。一旦分段后的数据量小于某个门槛，为避免Quick Sort的递归调用带来过大的额外负荷，就改用insertion Sort。如果递归层次过深，还会改用Heap Sort。
 
 ## 📚 数据结构
 
@@ -3716,6 +3917,20 @@ XSS是指恶意攻击者利用网站没有对用户提交数据进行转移处�
 
 4、当修改性能远远大于检索性能，不应该创建索引。
 
+**哪些情况下索引会失效？**[文](https://blog.csdn.net/JOJOY_tester/article/details/71104104)
+
+1. 条件中用or，即使其中有条件带索引,也不会使用索引（这就是查询尽量不要用or的原因）
+
+   > 使用or，又想索引生效，只能将or条件中的每一个列都加上索引
+
+2. 对于多列索引，不是使用第一部分，则不会索引
+
+3. like的模糊查询以%开头，索引失效
+
+4. 如果列类型是字符串，那一定要在条件中将数据使用引号引用起来，否则不会使用索引。
+
+5. 如果MySQL预计使用全表扫描要比使用索引快，则不使用索引。
+
 **SQL语句优化**
 
 怎样发现有问题的SQL语句？
@@ -4167,3 +4382,51 @@ A:增大数据范围，如`int` 改为`BigInt`
 
 1、删除数据库不使用的默认用户 2、配置相应的权限（包括远程连接） 3、不可在命令行界面下输入数据库的密码 4、定期修改密码与加强密码的复杂度
 
+## 📚 设计模式
+
+### 🏷 单例模式
+
+确保一个类只有一个实例，并提供该实例的全局访问点
+
+1. 将构造函数、析构函数、复制构造函数、复制操作符声明为私有，即可实现单例模式
+
+```c
+//常用单例
+class Singleton
+{
+public:
+	static Singleton* Instance()
+    {
+        if(_instance == nullptr)
+        {
+            _instance = new Singleton;
+        }
+        return _instance;
+    }
+protected:
+    Singleton(){};
+private:
+    static Singleton* _instance;
+};
+```
+
+2. 为了避免用户复制行为，可以将复制构造函数声明为private或使用C++11的delete语法。
+
+```c
+public:
+	Singleton& operator = (Singleton res) = delete;
+```
+
+3. 上述单例模式是线程不安全的，如果碰巧有多个线程在同时调用该方法，那么可能被多次构造。
+
+   可以在存在竞争的地方加上互斥锁。
+
+
+
+## 参考
+
+[https://interview.huihut.com/#/?id=%e2%ad%90%ef%b8%8f-effective](https://interview.huihut.com/#/?id=⭐️-effective)
+
+https://github.com/CyC2018/CS-Notes/tree/master/docs/notes
+
+https://www.nowcoder.com/tutorial/93/8ba2828006dd42879f3a9029eabde9f1
