@@ -3224,7 +3224,21 @@ https://juejin.im/post/5b0274ac6fb9a07aaa118f49
 
 ![img](http://xyongs.cn/image/HTTPS-SSL-6-5.png)
 
-##### HTTP1.1与HTTP2.0
+##### HTTP1.X与HTTP2.0
+
+[HTTP1.1 和 HTTP2.0 的区别](https://juejin.im/post/5d3ac5dfe51d454f6f16ecde)
+
+* **新的二进制格式（Binary Format）**，HTTP1.x的解析是基于文本，
+
+* **多路复用（MultiPlexing）**即连接共享，即每一个request都是用作连接共享机制的。一个request对应一个id，这样一个连接上可以有多个request，每个连接的request可以随机的混杂在一起，接收方可以根据request的ID将request在归属到各自不同的服务端请求中。
+
+* **header压缩**，HTTP1.x的header带有大量信息，而且每次都要重复发送，HTTP2.0使用encoder来减少需要传输的header大小，通信双方各自cache一份header fields表，既避免了重复header的传输，又减小需要传输的大小。
+
+* 服务端推送：同SPDY一样，HTTP2.0也具有server push功能
+
+* HTTP2.0多个请求可同时在一个连接上并行执行。某个请求任务耗时严重，不会影响其他链接的正常执行；
+
+  ![img](http://xyongs.cn/image/HTTP2_0-6-22.png)
 
 #### 常见问题
 
