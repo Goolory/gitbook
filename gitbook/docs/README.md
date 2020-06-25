@@ -1958,10 +1958,6 @@ B+树是一种数据结构，是个n叉树，每个节点通常有很多个孩�
 
 * 顺序查找
 
-  #### 二分查找
-
-  https://segmentfault.com/a/1190000016825704
-
 [在排序数组中查找元素的第一个和最后一个位置](https://leetcode-cn.com/problems/find-first-and-last-position-of-element-in-sorted-array)
 
 [寻找重复数](https://leetcode-cn.com/problems/find-the-duplicate-number)
@@ -1973,6 +1969,65 @@ B+树是一种数据结构，是个n叉树，每个节点通常有很多个孩�
 * 插值插值
 * 哈希查找
 * 红黑树
+
+#### 二分法
+
+https://segmentfault.com/a/1190000016825704
+
+二分法的边界问题
+
+**标准**
+
+```c++
+int search(vector<int>& nums, int target)
+{
+    int left = 0, right = nums.size() - 1;
+    while(left <= right)
+    {
+        int mid = left + ((right - left) >> 1);
+        if (nums[mid] == target) return mid;
+        else if (nums[mid] > target)
+            right = mid - 1;
+        else
+            left = mid +1;
+    }
+}
+```
+
+* 循环条件 ： left <= right
+
+* 中间位置：mid = left + ((right - left) >>1)
+* 左边界更新 ：left = mid +1;
+* 有边界更新 ： right = mid - 1;
+* 返回值 ： mid / -1
+
+**左边界查找**
+
+(右边界同理左边界)
+
+例如：数组有序但是可能包含重复元素,我们要找到最左的元素，需要持续的收缩右边界。
+
+```c++
+int search(vector<int> nums, int target)
+{
+    int left = 0, right = nums.size() - 1;
+    while (left < right)
+    {
+        int mid = left + (right - left) / 2;
+        if (nums[mid] < target)
+            left = mid +1;
+        else
+            right = mid;
+    }
+    return nums[left] == target ? left : -1;
+}
+```
+
+* 循环条件 ： left < right;
+* 中间位置： mid = left + (right - left) / 2;
+* 左边界：left = mid + 1;
+* 右边界：right = mid;
+* 返回： nums[left] == target ? left : -1;
 
 ### 🏷 并查集
 
