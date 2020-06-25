@@ -1806,6 +1806,8 @@ B+树是一种数据结构，是个n叉树，每个节点通常有很多个孩�
 * 除根节点以外的所有非节点至少有M/2棵子树，至多有M棵子树（关键字数为子树数减一）
 * 所有的叶子节点都位于同一层，叶子节点为失败节点，不存储数据
 
+![img](http://www.xyongs.cn/image/b_tree-6-25.png)
+
 **B树的优点**
 
 对于在内部节点的数据，可以直接得到，不必根据叶子节点来定位
@@ -1955,7 +1957,10 @@ B+树是一种数据结构，是个n叉树，每个节点通常有很多个孩�
 ### 🏷 查找
 
 * 顺序查找
-* 二分查找
+
+  #### 二分查找
+
+  https://segmentfault.com/a/1190000016825704
 
 [在排序数组中查找元素的第一个和最后一个位置](https://leetcode-cn.com/problems/find-first-and-last-position-of-element-in-sorted-array)
 
@@ -4454,6 +4459,98 @@ public:
    可以在存在竞争的地方加上互斥锁。
 
 ## 📚 杂货
+
+### 🏷 git总结
+
+[参考](https://labuladong.gitbook.io/algo/di-wu-zhang-ji-suan-ji-ji-shu/git-chang-yong-ming-ling)
+
+一个学习git的[好地方](https://learngitbranching.js.org/)
+
+#### git的三个分区
+
+**working directory** : 工作目录，`git add`可以将其提交到stage area区域
+
+> git add .     //提交至暂存区                                    git commit -a   直接提交到历史仓库
+>
+> git checkout .     //将修改从暂存区还原到工作区
+
+**stage area**：暂存区 `git commit`将其提交到commit history
+
+> git commit -m "xx"     //暂存区提交到历史仓库
+>
+> git reset a.txt        // 撤回到暂存区
+
+**commit history**：【提交历史区】进入此地的东西基本上被认为不会丢失了
+
+> git checkout HEAD .    回到最初状态  上一个版本
+
+#### git分支
+
+`git checkout -b newb`  创建新分支
+
+`git branch v1` 创建分支，但不会进入分支
+
+`git branch -d v1` 删除分支
+
+`git checkout newb` 切换分支
+
+`git merge newb` 合并分支到`master`中
+
+> 此时会新建一个commit，如果合并至遇到了冲突，仅需修改后重新commit
+
+`git rebase`  合并分支
+
+> 会合并之前的commit历史
+>
+> 优点：得到更简洁的项目历史
+>
+> 缺点：如果合并出现代码问题不容易定位
+>
+> 在`newb`分支上执行 `git rebase master`将分支合并到master
+
+`git merge` 与`git rebase`区别
+
+![img](http://xyongs.cn/image/merge-6-24.png)
+
+![img](http://xyongs.cn/image/rebase-6-24.png)
+
+`git log` 查看提交记录的哈希值
+
+`git reflog`查看提交记录
+
+`git reset --hard 2ec540` 返回到某个版本
+
+#### HEAD
+
+HEAD 是一个对当前检出记录的符号引用--也就是指向你正在其基础上进行工作的提交记录
+
+`git checkout HEAD^` 将HEAD向上移动一个版本
+
+`git checkout HEAD~n`将HEAD向上移动n个版本
+
+#### branch 
+
+`git branch -f master HEAD ~3` 将master分支强制指向HEAD的第三级父分支
+
+#### reset 与 revert 撤销变更
+
+`git reset` : 通过把分支记录回退几个提交记录来实现撤销修改。“改写历史”。原来的提交记录没有发生过一样。这种“改写历史”的方法对大家一起使用的远程分支是无效的。
+
+`git revert`: 为了撤销更改并分享给别人。他会在我们撤销提交记录后面新建一个提交，这个提交与没有更改前的提交相同。 
+
+#### git cherry-pick <提交号>
+
+将一些提交复制到当前所在的位置HEAD下面
+
+#### rebase
+
+`git rebase -i HEAD~4` : 操作HEAD前4个提交，**可以调整提交记录的顺序**，删除不想要的提交，合并提交
+
+#### 远程仓库
+
+`git fetch` : 从远程仓库获得数据，没有与本地分支合并
+
+`git pull`: 从远程仓库中获取数据；  pull = fetch + merge  ，下拉远程并与本地分支合并
 
 ### 🏷 正向代理与反向代理
 
