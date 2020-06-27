@@ -1707,6 +1707,79 @@ struct TreeNode
 
 [从前序与中序遍历序列构造二叉树](https://leetcode-cn.com/problems/construct-binary-tree-from-preorder-and-inorder-traversal/submissions/)
 
+**非递归遍历**
+
+```c++
+//层序  使用队列
+void func(TreeNode* root)
+{
+    if (root == NULL) return;
+    queue<TreeNode*> q;
+    q.push(root);
+    while(!q.empty())
+    {
+        TreeNode *node = q.top();
+        q.pop();
+        cout << node->val << ",";
+        if (node->left) q.push(node->left);
+        if (node->right) q.push(node->right);
+    }
+}
+//非递归先序(中序) ， 非递归手法
+void func(TreeNode* root)
+{
+    if (root == NULL) return;
+    stack<TreeNode*> s;
+    TreeNode *node = root;
+    while(node != NULL || !s.empty())
+    {
+        if (node != NULL)
+        {
+            cout << node->val << ",";
+            s.push(node);
+            node = node->left;
+        } else
+        {
+            TreeNode * n = s.top();
+            //将输出放在此处为中序遍历
+            s.pop();
+            node = n->right;
+        }
+    }
+}
+//后序遍历 两个栈
+void func(TreeNode* root)
+{
+    if (root == NULL) return;
+    stack<TreeNode*> s1;
+    stack<TreeNode*> s2;
+    s1.push(root);
+    TreeNode* node = root;
+    while(!s1.empty())
+    {
+        node = s1.top();
+        s1.pop();
+        if (node->left != NULL)
+        {
+            s1.push(node->left);
+        }
+        if (node->right != NULL)
+        {
+            s1.push(node->right);
+        }
+        s2.push(node);
+    }
+    while(!s2.empty())
+    {
+        cout << s2.top()->val << ",";
+        s2.pop();
+    }
+}
+
+```
+
+
+
 ### 🏷 平衡二叉树（AVL)🌲
 
 左右子树高度差不超过1，左右子树也是平衡二叉树
