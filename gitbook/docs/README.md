@@ -367,6 +367,32 @@ class的默认继承权限和默认访问权限是private
 
 另外， class还可以定义模板类形参，如 `template<class T, int i>`
 
+### 🏷 类对象占用内存空间大小
+
+[原文](https://blog.csdn.net/baidu_35679960/article/details/79487478)
+
+首先，平时所声明的类只是一种类型定义，它本身没有大小可言，因此，如果用sizeof运算符对一个类型名操作，那得到的是具有该类型实体的大小。
+
+> 类所占内存的大小是由成员变量（静态变量除外）决定的，成员函数是不计算在内的。
+>
+> 成员函数还是以一般的函数一样存在。a.fun()通过fun(a.this)来调用的。所谓成员函数只是名义上是类里的。其实成员函数的大小不在类对象里面。同一个类的多个对象共享函数代码。而我们访问类的成员函数是通过类里面的指针实现。
+
+<font color="red">父类子类共享一个虚函数指针</font>
+
+空的类是会占用内存空间的，而且大小是1，原因是C++要求每个实例在内存中都有独一无二的地址，
+
+1. 类内部的成员变量
+
+   普通的变量：是要占用内存的，但是要注意对其原则
+
+   static修饰的静态变量：不占用内存，原因是编译期将其放在全局变量区
+
+2. 类内部的成员函数
+
+   普通函数：不占用内存
+
+   虚函数：要占用个字节，用来指定虚函数的虚函数表的入口地址。所以一个类的虚函数占用的地址是不变的，和虚函数个数没有关系的。
+
 ### 🏷 类成员的访问权限
 
 1、public：类中、类外可以访问
@@ -631,8 +657,6 @@ for (int i = 0; i < row; i++)
     delete[] Table[i];
 delete[] Table;
 ```
-
-
 
 ### 🏷 智能指针
 
@@ -1790,7 +1814,7 @@ void func(TreeNode* root)
 
 ### 🏷 二叉搜索树(BST)🌲
 
-满足平衡树要求，且每个节点中其左子树的数据都要小于等于根节点，右子树的数据都大于根节点
+二叉搜索树（Binary Search Tree，简称 BST）是一种很常用的的二叉树。它的定义是：一个二叉树中，任意节点的值要大于等于左子树所有节点的值，且要小于等于右边子树的所有节点的值
 
 ### 🏷 红黑树🌲
 
@@ -2042,6 +2066,66 @@ B+树是一种数据结构，是个n叉树，每个节点通常有很多个孩�
 * 插值插值
 * 哈希查找
 * 红黑树
+
+#### KMP算法
+
+KMP算法重点在于前缀表的构建
+
+![img](http://www.xyongs.cn/image/KMP-6-30.png)
+
+```c++
+class Solution {
+public:
+    int strStr(string haystack, string needle) {
+        int n = haystack.size(), m = needle.size();
+        if (m == 0) return 0;
+        if (n < m) return - 1; 
+        vector<int> next = search(needle);
+        int i = 0;
+        int j = 0;
+        while(i < n){
+            if (j == m - 1 && haystack[i] == needle[j])
+                return i - j;
+            else if (haystack[i] == needle[j]){
+                i++; j++;
+            } else{
+                if (j > 0)
+                    j = next[j];
+                else{
+                    j = 0; i++;
+                }
+            }
+        }
+        return -1;
+    }
+
+    vector<int> search(string needle){
+        vector<int> next(needle.size(), 0);
+        int len = 0;
+        int i = 1;
+        next[0] = 0;
+        while(i < needle.size()){
+            if (needle[i] == needle[len]){
+                len++;
+                next[i] = len;
+                i++;
+            }else{
+                if (len > 0){
+                    len = next[len - 1];
+                } else{
+                    next[i] = 0;
+                    i++;
+                }
+            }
+        }
+        next.erase(next.end() - 1);
+        next.insert(next.begin(), -1);
+        return next;
+    }
+};
+```
+
+
 
 #### 二分法
 
@@ -3850,7 +3934,7 @@ select和poll的功能基本相同，不过存在一些细节上有所不同。
 
 2. 速度：两者速度都比较慢，每次调用都需要将全部的描述符从应用进程缓冲区复制到内核缓冲区。
 
-#### epoll
+##### epoll
 
 ```c++
 int epoll_create(int size);
