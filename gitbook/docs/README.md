@@ -1683,6 +1683,18 @@ struct stackNode
 }
 ```
 
+[单调栈：](https://labuladong.gitbook.io/algo/shu-ju-jie-gou-xi-lie/dan-tiao-zhan)
+
+[496.下一个更大元素I](https://leetcode-cn.com/problems/next-greater-element-i)
+
+[503.下一个更大元素II](https://leetcode-cn.com/problems/next-greater-element-ii)
+
+[1118.一月有多少天](https://leetcode-cn.com/problems/number-of-days-in-a-month)
+
+[单调队列:](https://labuladong.gitbook.io/algo/shu-ju-jie-gou-xi-lie/dan-tiao-dui-lie)
+
+[239.滑动窗口最大值](https://leetcode-cn.com/problems/sliding-window-maximum/)
+
 **链式结构**：
 
 单链表，双链表，循环列表
@@ -1736,6 +1748,16 @@ struct TreeNode
 * 后续遍历：左右中
 
 [从前序与中序遍历序列构造二叉树](https://leetcode-cn.com/problems/construct-binary-tree-from-preorder-and-inorder-traversal/submissions/)
+
+[100.相同的树](https://leetcode-cn.com/problems/same-tree)
+
+[450.删除二叉搜索树中的节点](https://leetcode-cn.com/problems/delete-node-in-a-bst)
+
+[701.二叉搜索树中的插入操作](https://leetcode-cn.com/problems/insert-into-a-binary-search-tree)
+
+[700.二叉搜索树中的搜索](https://leetcode-cn.com/problems/search-in-a-binary-search-tree)
+
+[98.验证二叉搜索树](https://leetcode-cn.com/problems/validate-binary-search-tree)
 
 **非递归遍历**
 
