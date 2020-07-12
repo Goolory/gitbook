@@ -4684,6 +4684,40 @@ MyISAM用的是非聚类索引方式，即数据和索引落在不同的两个�
 
 两种锁各有优缺点，不可认为一种好于另一种，像乐观锁适用于写比较少的情况下，即冲突真的很少发生的时候，这样可以省去了锁的开销，加大了系统的整个吞吐量。但如果经常产生冲突，上层应用会不断的进行`retry`，这样反倒是降低了性能，所以这种情况下用悲观锁就比较合适。
 
+### 🏷 MySQL join原理
+
+[MySQL Join算法与调优白皮书（一）](https://mp.weixin.qq.com/s/AwhFsjUcoIA8zfqR5TmrHg)
+
+两张表join的过程：
+
+![img](http://www.xyongs.cn/image/join_7-12.png)
+
+MySQL是只支持一种join算法的Nested-Loop Join（嵌套循环连接），变种：
+
+（1）Simple Nested-Loop join
+
+![img](http://www.xyongs.cn/image/join_1-7-12.png)
+
+从驱动表（r)中取出R1匹配S表中所有列，然后R2,R3,直到将R表中数据匹配完，然后合并数据。
+
+缺点开销太大
+
+（2）Index Nested-Loop Join
+
+索引嵌套连接是由于非驱动表上有索引，通过索引加速查询。这也是在做关联查询的时候必须要求关联字段有索引的一个主要原因。
+
+![img](http://xyongs.cn/image/join_2-7-12.png)
+
+(3)Block Nested-Loop Join
+
+比simple Nested-Loop join多了一个join buffer， 使用join buffer将驱动表中的查询join相关的列缓冲到join buffer中，然后批量与非驱动表进行比较，这样来实现的话，可以将多次比较合并为一次，降低了非驱动的访问频率。也就是只需要访问一次S表。
+
+MySQL中可以设置join_buffer_size 默认是256K
+
+![img](http://www.xyongs.cn/image/join_3-7-12.png)
+
+
+
 ### 🏷 数据库Q&A
 
 **问题1、为什么一定要设置一个主键？**
@@ -4827,6 +4861,57 @@ A:增大数据范围，如`int` 改为`BigInt`
    Redis数据库就是一款缓存数据库，用于存储使用频繁的数据，这样减少访问数据库的次数，提高运行效率。
 
 一般MySQL和Redis都是配合使用的。
+
+### 🏷 命令
+
+Reids-cli  打开终端进入
+
+redis-cli -h host -p port -a password  远程进入
+
+| key命令                     |                                                              |
+| --------------------------- | ------------------------------------------------------------ |
+| Del key                     | 删除                                                         |
+| DUMP key                    | 序列化                                                       |
+| EXISTS key                  | 检查是否存在                                                 |
+| EXPIRE key seconds          | 为key设定过期时间                                            |
+| Keys pattern                | 模式化查找 keys *：查找所有                                  |
+| Move key db                 | 将当前key移动到给定数据库                                    |
+| persist  key                | 移除key的过期时间，将key持久保存                             |
+| **字符串命令**              |                                                              |
+| Set key value               |                                                              |
+| Get key                     |                                                              |
+| getrange key start end      | 返回key中对应的子字符串                                      |
+| Getset key value            | 将给定的key的值设为value，并返回key的旧值                    |
+| ...                         |                                                              |
+| **Hash**                    |                                                              |
+| Hdel key field1             | 删除一个哈希字段                                             |
+| Hexists key field           |                                                              |
+| Hget key field              |                                                              |
+| Hgetall key                 | 返回key的所有字段                                            |
+| Hincrby key field increment | 某值加上增量increment                                        |
+| Hkeys key                   | 所有的字段                                                   |
+| HLen key                    | 字段数量                                                     |
+| HVals key                   | 所有字段值                                                   |
+| **List**                    |                                                              |
+| Lpush key val               | 添加元素                                                     |
+| Lrange key start end        | 返回区间内元素                                               |
+| Lpop key                    | 移出并获得第一个元素                                         |
+| **set**                     | 是string类型的无序集合。hash表实现                           |
+| Sadd key member1 member2    | 插入                                                         |
+| Scard key                   | 获取                                                         |
+| Smembers key                | 返回集合中所有成员                                           |
+| Spop key                    | 移出并返回一个随机元素                                       |
+| ...                         |                                                              |
+| **sorted set **             | 有序集合，不允许重复成员，每个元素关联一个double类型的分数。通过分数来进行排序 |
+| Zadd key score member       | 添加                                                         |
+| Zcard key                   | 获取所有的成员                                               |
+| zcount key min max          | 获取指定区域的成员                                           |
+| **发布订阅**                |                                                              |
+| **Redis事务**               | Redis事务的执行不是原子性的，中间某条命令失败不会导致前面的事务回滚，也不会导致后面的事务不做 |
+| multi                       | 开启一个事务                                                 |
+| exec                        | 执行事务                                                     |
+
+
 
 ## 📚 设计模式
 
