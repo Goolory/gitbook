@@ -373,6 +373,77 @@ class的默认继承权限和默认访问权限是private
 
 另外， class还可以定义模板类形参，如 `template<class T, int i>`
 
+### 🏷 C++中的类默认函数与default关键字和delete关键字
+
+[原文](https://blog.csdn.net/u012333003/article/details/25299939)
+
+1. 类中默认的成员函数
+   * 默认构造函数
+   * 析构函数
+   * 拷贝构造函数
+   * 拷贝赋值函数
+   * 移动构造函数（c++11）
+   * 移动拷贝函数
+2. 类中自定义的操作符函数
+   * operator
+   * operator&
+   * operator&&
+   * operator*
+   * operator->
+   * operator->*
+   * operator new
+   * operator delete
+
+一旦程序员实现了这些函数的自定义版本，则编译器不在自动生成默认版本。
+
+```c++
+class Mc
+{
+  public:
+  	Mc() = default;
+  	Mc(int i):data(i){};
+  private:
+  	int data;
+}
+```
+
+当我们仅创建了有参构造函数后，如果想调用无参构造函数编译保存。因为一旦定义了有参构造函数，默认的构造函数会被屏蔽。
+
+**C++11中可以通过default关键字让默认构造函数恢复**
+
+#### C++新特性-移动构造函数和移动赋值
+
+##### 移动构造函数
+
+[C++11新特性（50）- 移动构造函数和移动赋值](https://blog.csdn.net/craftsman1970/article/details/81087262)
+
+```c++
+//拷贝构造函数
+Tracer(Tracer& t)
+{
+  if (t.text != nullptr){
+    int len = strlen(t.text);
+    text = new char[len+1];
+    strcpy(text, t.text);
+  }
+}
+//拷贝构造函数中实现了深拷贝处理。
+//移动构造函数
+Tracer(Tracer&& t)
+{
+  if (t.text != nullptr){
+    text = t.text;
+    t.text = nullptr;
+  }
+}
+```
+
+代码构造和拷贝构造函数类似，但是内存的处理不是拷贝而是转移。注意参数类型是右值引用。
+
+
+
+
+
 ### 🏷 类对象占用内存空间大小
 
 [原文](https://blog.csdn.net/baidu_35679960/article/details/79487478)
@@ -397,7 +468,9 @@ class的默认继承权限和默认访问权限是private
 
    普通函数：不占用内存
 
-   虚函数：要占用个字节，用来指定虚函数的虚函数表的入口地址。所以一个类的虚函数占用的地址是不变的，和虚函数个数没有关系的。
+   虚函数：要占用4个字节，用来指定虚函数的虚函数表的入口地址。所以一个类的虚函数占用的地址是不变的，和虚函数个数没有关系的。
+   
+   注意虚函数指针（32为占4字节，64占8字节）
 
 ### 🏷 类成员的访问权限
 
@@ -2604,6 +2677,26 @@ bool f = ((x ^ y) < 0); // false
 
 `n&(n-1)`
 
+### 🏷 反复平方法求幂
+
+```c++
+	int pow(int a, int b)
+  {
+    int res = 1;
+    int r = a;
+    while(b)
+    {
+      if (b & 1)
+        res *= r;
+      r *= r;
+      b / 2;
+    }
+    return res;
+  }
+```
+
+
+
 ## 📚 操作系统
 
 ### 🏷进程管理
@@ -3879,6 +3972,28 @@ TCP是一个基于字节流的传输服务，“流”意味着TCP所传输的�
 * 数据包之间设立边界，如添加特殊字符`\r\n`
 * 使用更复杂的应用层协议
 
+#### TCP分段与IP分片
+
+[TCP分段与IP分片](https://blog.csdn.net/yao5hed/article/details/81288072)
+
+[网络协议】TCP分段与IP分片](https://blog.csdn.net/ns_code/article/details/30109789)
+
+TCP报文段如果很长的话，会在发送时发生分段，在接收时进行重组，同样IP数据报在超过一定值时也会发生分片，在接收端再将分片重组。
+
+##### MTU（最大传输单元）
+
+链路层中的网络对数据帧的一个限制，以以太网为例，MTU为1500个字节。一个IP数据报在以太网中传输，如果它的长度大于MTU，就要进行分片传输，使得每片的长度小于MTU。<font color="red">分片传输的IP数据不一定按序到达，但IP首部中的信息能让这些数据报片按序组装，IP数据报的分片与重组是在网络层完成的。</font>
+
+##### MSS（最大分段大小）
+
+MSS是TCP报文头部的字段，MSS是TCP数据包每次能够传输的最大数据分段，TCP报文段的长度大于MSS时，进行分段传输。TCP在建立连接的时候通常需要双方协商这个MSS值，每一方有用于通告它期望接收到的MSS选项。*MSS的值一般为MTU减去两个首部大小（需减去IP数据包包头的大小20Bytes和TCP数据段的包头20Bytes）*--以太网中一般为1500-20-20=1460。
+
+<font color="blue">UDP不会分段，就由IP分片，TCP会分段，就不用IP来分片</font>
+
+<font color="blue">IP数据报分片后，只有第一片带有UDP首部或ICMP首部，其余部分只有IP头部，到了端点后根据IP头部中的消息在网络层进行重组。</font>
+
+而TCP报文段的每个分段中都有TCP首部，到了端点之后根据TCP首部的信息在传输层进行重组
+
 ### 🏷 网络编程
 
 #### I/O模型
@@ -4941,8 +5056,6 @@ redis-cli -h host -p port -a password  远程进入
 | multi                       | 开启一个事务                                                 |
 | exec                        | 执行事务                                                     |
 
-
-
 ## 📚 设计模式
 
 ### 🏷 单例模式
@@ -5204,6 +5317,48 @@ server {
 [连前端都看得懂的《Nginx 入门指南》](https://juejin.im/post/5e982d4b51882573b0474c07)
 
 [推荐 | 如何用Nginx来助力前端开发](https://juejin.im/post/5e9ab2e851882573a67f62a0)
+
+### 🏷 项目
+
+#### RESTful API
+
+对前后端分离开发的一种接口约束方式。
+
+RESTful只是一种架构方式的约束，给出一种约定的标准。
+
+REST：Repersentational State Transfer (表象层状态转变)
+
+1. 每一个URI代表一种资源
+2. 客户端和服务器之间，传递这种资源的某种表现层
+3. 客户端通过（get, post, put, delete）对服务器资源进行操作。
+
+#### RESTful原则
+
+1. c-s架构
+
+   数据存储在server端,Client端只需要使用就行。两端单独开发，互不干扰
+
+2. 无状态
+
+   HTTP请求本身就是无状态的，基于C-S架构，客户端的每一次请求带有充分的信息能够让服务端识别。
+
+3. 统一的接口
+
+   这才是REST架构的核心，统一的接口对RESTful服务非常重要。客户端只需要关注实现接口就可以，接口可读性加强，使用人员方便调用。
+
+4. 一致的数据格式
+
+   服务端返回的数据格式要么是XML，要么是json，或者直接返回状态码。
+
+5. 系统分层
+
+6. 可缓存
+
+7. 按需编码、可制定代码
+
+
+
+[面试官：你连RESTful都不知道我怎么敢要你](https://www.cnblogs.com/zhangmumu/p/11936262.html)
 
 ## 参考
 
