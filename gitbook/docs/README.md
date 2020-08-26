@@ -800,6 +800,8 @@ p3 = unique_ptr<string>(new string("sdf"));   //allowed
 
 Share_ptr是为了解决auto_ptr在对象所有权上的局限性
 
+[shared__ptr是否是线程安全的](https://beamnote.com/2014/is-shared-ptr-thread-safe/)
+
 **成员函数**：
 
 use_count返回引用计数个数
@@ -1253,6 +1255,40 @@ A：不可以。
 
 当复制一个auto_ptr时，它所指向的元素的对象的所有权被交付到被复制的auto_ptr上面，而它自身被复制设置为null。复制一个auto_ptr意味着改变它的值。出错。
 
+## 📚Effective C++
+
+### 构造/析构/赋值运算
+
+#### 条款5：C++定义类是默认含有的函数
+
+默认构造函数、析构函数、拷贝赋值函数、拷贝赋值操作符
+
+```c++
+Class Empty{
+public:
+  Empty(){..};
+  Empty(const Empty& rhs){...};
+  ~Empty(){..}
+  Empty& operator=(const Empty& rhs){...}
+};
+```
+
+#### 条款6：不想自动生成类中函数应该明确拒绝
+
+delete
+
+将其设为私有
+
+#### 条款7：为多态基类声明virtual析构函数
+
+#### 条款8：别让异常逃离析构函数
+
+#### 条款9：绝不在构造和析构过程中调用virtual函数
+
+Base class构造期间virtual函数绝不会下降到derived class阶层。
+
+在析构函数中，一旦析构函数被执行，对象内的derived class成员变量便呈未定义值。C++视他们不存在。
+
 ## 📚STL
 
 《STL源码解析》-侯捷
@@ -1585,6 +1621,12 @@ vector维护一个连续线性空间，支持随机存取。
 | reserve(i.begin(), i.end()) | 反转vector                     |
 | erase(it)                   | 删除某个位置上的元素           |
 | insert(pos, n,x)            | pos位置插入n个x元素            |
+
+**vector中的resize() 和 reserver()函数**
+
+reserver()用来给vector预分配存储区大小，即capacity的值
+
+resize()是重新分配大小，改变容器的大小，并创建对象。
 
 #### list
 
@@ -2499,6 +2541,28 @@ public:
 
 [买卖股票的最佳时机含手续费](https://leetcode-cn.com/problems/best-time-to-buy-and-sell-stock-with-transaction-fee/)
 
+找零【bilibili】笔试
+
+```java
+ public static int GetCoinCount (int N) {        // write code here    
+   N = 1024 - N;        
+   int[] arr = {1, 4, 16, 64};        
+   int[] dp = new int[N+1];        
+   Arrays.fill(dp, N+1);        
+   dp[0] = 0;        
+   for (int i = 0; i <= N ; i++) {            
+     for (int j = 0; j < 4; j++) {                
+       if(i - arr[j] >= 0){                    
+         dp[i] = Math.min(dp[i], dp[i - arr[j]] + 1);
+       }
+     }
+   }
+   return dp[N];
+ }
+```
+
+
+
 ### 🏷 贪心法
 
 一种在每一步选择中都采取在当前状态下最好或最优（即最有利）的选择，从而希望导致结果是最好或最优的算法
@@ -3226,6 +3290,26 @@ reader () {  // 读者进程
 
 5、进入time4时刻，因为available(10,4,7) > T0.needing(7,4,3)；所以执行T0。完成安全序列.
 
+#### 用户线程和内核线程的区别
+
+1. 内核线程：切换由内核控制，当线程进行切换的时候，由用户态转化为内核态。切换完毕后要从内核态返回用户态；
+
+   > 优点：当有多个处理机时，一个进程的多个线程可以同时执行
+   >
+   > 缺点：由内核进行调度。
+
+2. 用户线程，线程的切换由用户自己控制，不需要内核的干涉，少了进程内核态的消耗，但是不能很好的利用多核CPU；
+
+   > 线程表在用户态中
+   >
+   > 优点：
+   >
+   > 1. 线程的调度不需要内核的之间参与，启动比内核调用效率高，不需要陷入内核，不需要上下文切换
+   >
+   > 2. 允许每个进程有自己定制的调度算法，如某些应用程序中垃圾回收线程
+   >
+   > 缺点：在多处理机下，同一个进程中的线程只能在一个处理机下分时复用
+
 ### 🏷 内存管理
 
 #### 分页和分段存储管理有和区别？
@@ -3885,6 +3969,16 @@ MSL（Maximum Segment Lifetime），TCP允许不同的实现可以设置不同�
 
 TCP还设有一个保活计时器，显然，客户端如果出现故障，服务器不能一直等下去，白白浪费资源。服务器每收到一次客户端的请求后都会重新复位这个计时器，时间通常是设置为2小时，若两小时还没有收到客户端的任何数据，服务器就会发送一个探测报文段，以后每隔75分钟发送一次。若一连发送10个探测报文仍然没反应，服务器就认为客户端出了故障，接着就关闭连接。
 
+##### TCP第三次握手失败后怎么办？
+
+**三次握手**
+
+客户端 ==> SYN是1同步 ,ACK确认标志是0,seq序号是x ==> 服务器
+客户端 <== SYN是1同步 ,ACK确认标志是1,seq序号是y,ack确认号是x+1 <==服务器
+客户端 ==> ACK确认标志是1,seq序号是x+1,ack确认号是y+1 ==>服务器
+
+服务器端发送了一个SYN+ACK报文后就会启动一个定时器，等待client返回的ACK。如果第三次握手失败的话client给server返回了ACK，server并不能收到这个ACK报文。那么server端就会启动超时重传机制，超过规定时间后重新发送SYN+ACK，重传次数根据/proc/sys/net/ipv4/tcp_synack_retries来指定，默认是5次。如果重传指定次数了后，任然未收到ACK应答，那么一段时间后server自动关闭这个链接。但是client认为这个连接已经建立，如果client端向server写数据，server端将以RST包响应。
+
 ##### TCP 可靠性保证
 
 1. 序列号、确认应答、超时重传
@@ -4443,6 +4537,10 @@ XSS是指恶意攻击者利用网站没有对用户提交数据进行转移处�
 > CDN防御的全称是Content Delivery Network Defense，即内容分流网络流量防御。高防CDN的原理就是构建在网络之上的内容分发网络，依靠部署在各地的边缘服务器，通过中心平台的负载均衡、内容分发、调度等功能模块，使用户就近获取所需内容，而不用直接访问网站源服务器。
 
 参考 [防御DDOS攻击高防服务器和高防CDN哪个好？](https://cloud.tencent.com/developer/news/364713)
+
+##### SYN泛洪攻击
+
+攻击者完成TCP前两次握手后，不返回第三次握手ACK。
 
 ## 📚 MYSQL数据库
 
@@ -5331,6 +5429,38 @@ server {
 
 [推荐 | 如何用Nginx来助力前端开发](https://juejin.im/post/5e9ab2e851882573a67f62a0)
 
+##### 负载均衡策略
+
+1. 轮询（默认）
+
+   ```
+   upstream backserver {
+   	server 192.168.0.14;
+   	server 192.168.0.15;
+   }
+   ```
+
+2. 按权重轮询
+
+   ```
+   upstream backserver{
+   	server 192.168.0.14 weight = 3;
+   	server 192.168.0.15 weight = 7;
+   }
+   ```
+
+   
+
+3. IP_hash
+
+   上述方法存在一个问题就是说，在负载均衡系统中，假如用户在某台服务器上登录了，那么该用户第二次请求的时候，可能会再重新定位到另一台服务器，其登录信息将会丢失，这样显然不妥。
+
+   我们可以采用IP_hash指令解决这个问题，如果客户已经访问了某个服务器，当用户再次访问时，会将该请求通过哈希算法，自动定位到该服务器。
+
+   
+
+4. 
+
 ### 🏷 项目
 
 #### RESTful API
@@ -5380,3 +5510,11 @@ REST：Repersentational State Transfer (表象层状态转变)
 https://github.com/CyC2018/CS-Notes/tree/master/docs/notes
 
 https://www.nowcoder.com/tutorial/93/8ba2828006dd42879f3a9029eabde9f1
+
+
+
+### 面试题汇总
+
+#### 智能指针
+
+内存泄漏：程序未能释放已经不能在使用的内容
