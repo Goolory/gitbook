@@ -4970,7 +4970,23 @@ MySQL中可以设置join_buffer_size 默认是256K
 
 ![img](http://www.xyongs.cn/image/join_3-7-12.png)
 
+##### mysql 语句执行顺序
 
+https://www.cnblogs.com/163yun/p/9448205.html
+
+- (1) `from`：对左表`left-table`和右表`right-table`执行笛卡尔积(a*b)，形成虚拟表VT1;
+- (2) `on`: 对虚拟表VT1进行`on`条件进行筛选，只有符合条件的记录才会插入到虚拟表VT2中;
+- (3) `join`: 指定`out join`会将未匹配行添加到VT2产生VT3,若有多张表，则会重复(1)~(3);
+- (4) `where`: 对VT3进行条件过滤，形成VT4, `where`条件是从左向右执行的;
+- (5) `group by`: 对VT4进行分组操作得到VT5;
+- (6) `cube | rollup`: 对VT5进行`cube | rollup`操作得到VT6;
+- (7) `having`: 对VT6进行过滤得到VT7;
+- (8) `select`: 执行选择操作得到VT8，本人看来VT7和VT8应该是一样的;
+- (9) `distinct`: 对VT8进行去重，得到VT9;
+- (10) `order by`: 对VT9进行排序，得到VT10;
+- (11) `limit`: 对记录进行截取，得到VT11返回给用户。
+
+Note: `on`条件应用于连表过滤，`where`应用于on过滤后的结果（有`on`的话），`having`应用于分组过滤
 
 ### 🏷 数据库Q&A
 
