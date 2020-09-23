@@ -198,7 +198,7 @@ assert(p != nullptr);
 
 c/c++不提供垃圾回收机制，因此需要对堆中的数据进行及时的销毁，防止内存泄漏，使用 `free, delete` 
 
-#### [C++ 栈和堆的区别](https://www.cnblogs.com/lxmhhy/p/3559212.html)
+
 
 ### 🏷 野指针与悬空指针
 
@@ -308,6 +308,8 @@ static test
 ```
 
 ### 🏷C++ --堆和栈详解
+
+[C++ 栈和堆的区别](https://www.cnblogs.com/lxmhhy/p/3559212.html)
 
 https://blog.csdn.net/wo17fang/article/details/52244238
 
