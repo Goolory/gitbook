@@ -3230,9 +3230,9 @@ reader () {  // 读者进程
 }
 ```
 
-#### [孤儿进程与僵尸进程]
+#### 孤儿进程与僵尸进程
 
-#### [总结](https://www.cnblogs.com/Anker/p/3271773.html)
+[总结](https://www.cnblogs.com/Anker/p/3271773.html)
 
 #### 进程和线程、协程的区别
 
