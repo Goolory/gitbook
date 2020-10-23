@@ -5048,6 +5048,20 @@ next-key 锁包含两部分：
 
 触发器是与表相关的数据库对象，在满足定义条件时触发，并执行触发器定义的语句集合。触发器的这种特性可以协助应用在数据库端确保数据库的完整性。
 
+### 🏷mysql的limit用法、逻辑分页和物理分页
+
+另：删除有逻辑删除与物理删除
+
+https://blog.csdn.net/lvoelife/article/details/81943070
+
+| 物理分页                                                     | 逻辑分页                                                     | cool       |
+| ------------------------------------------------------------ | ------------------------------------------------------------ | ---------- |
+| 物理分页依赖的是某一物理实体，这个物理实体就是数据库，比如MYSQL数据库提供了关键字limit，返回的是分页结果 | 逻辑分页依赖的是程序员编写代码，数据库返回的不是分页结果，而是全部数据，然后在由程序员通过代码获取分页数据，常用的操作是一次性从数据库中查询出全部数据并存储在list集合中，因为list集合有序，在根据索引获取指定范围的数据 | 概念       |
+| 每次都要访问数据库，对数据库造成的负担大                     | 只需访问一次数据库                                           | 数据库负担 |
+| 每次只读取一部分数据，占用的内存空间较小                     | 一次性将数据读取到内存中，占用较大的内存空间。               | 服务器负担 |
+| 每次需要时都要访问数据库，能够获取数据库的最新状态，实时性强 | 因为一次性读入到内存，数据发生了改变，数据的最新状态无法实时反映到操作中 | 实时性     |
+| 数据库量大、更新频繁的场合                                   | 数据量较小，数据稳定的场合                                   | 使用场合   |
+
 ### 🏷 Innodb引擎和Myisam引擎
 
 摘自[《深入理解 Mysql 索引底层原理》](https://zhuanlan.zhihu.com/p/113917726)
@@ -5494,6 +5508,251 @@ public:
 
    可以在存在竞争的地方加上互斥锁。
 
+### 🏷 简单工厂，工厂方法，抽象工厂
+
+> 作者：激情的狼王
+> 链接：https://www.jianshu.com/p/6d447cea14c7
+> 来源：简书
+> 著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。
+
+#### 简单工厂
+
+> **工厂类角色**：这是本模式的核心，含有一定的商业逻辑和判断逻辑，根据逻辑不同，产生具体的工厂产品。如例子中的Driver类。
+>  **抽象产品角色**：它一般是具体产品继承的父类或者实现的接口。由接口或者抽象类来实现。如例中的Car接口。
+>  **具体产品角色**：工厂类所创建的对象就是此角色的实例。在java中由一个具体类实现，如例子中的Benz、Bmw类。
+
+```java
+//抽象产品  
+abstract class Car{  
+    private String name;  
+      
+    public abstract void drive();  
+      
+    public String getName() {  
+        return name;  
+    }  
+    public void setName(String name) {  
+        this.name = name;  
+    }  
+}  
+//具体产品  
+class Benz extends Car{  
+    public void drive(){  
+        System.out.println(this.getName()+"----go-----------------------");  
+    }  
+}  
+  
+class Bmw extends Car{  
+    public void drive(){  
+        System.out.println(this.getName()+"----go-----------------------");  
+    }  
+}  
+  
+//简单工厂  
+class Driver{  
+    public static Car createCar(String car){  
+        Car c = null;  
+        if("Benz".equalsIgnoreCase(car))  
+            c = new Benz();  
+        else if("Bmw".equalsIgnoreCase(car))  
+            c = new Bmw();  
+        return c;  
+    }  
+}  
+  
+//main方法  
+public class BossSimplyFactory {  
+  
+    public static void main(String[] args) throws IOException {  
+        Car car = Driver.createCar("benz");  
+        car.setName("benz");  
+        car.drive();  
+    }  
+```
+
+#### 工厂方法模式
+
+> **抽象工厂角色**： 这是工厂方法模式的核心，它与应用程序无关。是具体工厂角色必须实现的接口或者必须继承的父类。在java中它由抽象类或者接口来实现。
+>  **具体工厂角色**：它含有和具体业务逻辑有关的代码。由应用程序调用以创建对应的具体产品的对象。在java中它由具体的类来实现。
+>  **抽象产品角色**：它是具体产品继承的父类或者是实现的接口。在java中一般有抽象类或者接口来实现。
+>  **具体产品角色**：具体工厂角色所创建的对象就是此角色的实例。在java中由具体的类来实现。
+
+```java
+//抽象产品  
+abstract class Car{  
+    private String name;  
+      
+    public abstract void drive();  
+      
+    public String getName() {  
+        return name;  
+    }  
+    public void setName(String name) {  
+        this.name = name;  
+    }  
+}  
+//具体产品  
+class Benz extends Car{  
+    public void drive(){  
+        System.out.println(this.getName()+"----go-----------------------");  
+    }  
+}  
+class Bmw extends Car{  
+    public void drive(){  
+        System.out.println(this.getName()+"----go-----------------------");  
+    }  
+}  
+  
+  
+//抽象工厂  
+abstract class Driver{  
+    public abstract Car createCar(String car) throws Exception;  
+}  
+//具体工厂（每个具体工厂负责一个具体产品）  
+class BenzDriver extends Driver{  
+    public Car createCar(String car) throws Exception {  
+        return new Benz();  
+    }  
+}  
+class BmwDriver extends Driver{  
+    public Car createCar(String car) throws Exception {  
+        return new Bmw();  
+    }  
+}  
+  
+public class Boss{ 
+    public static void main(String[] args) throws Exception {  
+        Driver d = new BenzDriver();  
+        Car c = d.createCar("benz");   
+        c.setName("benz");  
+        c.drive();  
+    }  
+} 
+
+```
+
+#### 抽象工厂
+
+> **抽象工厂角色**： 这是工厂方法模式的核心，它与应用程序无关。是具体工厂角色必须实现的接口或者必须继承的父类。在java中它由抽象类或者接口来实现。
+>  **具体工厂角色**：它含有和具体业务逻辑有关的代码。由应用程序调用以创建对应的具体产品的对象。在java中它由具体的类来实现。
+>  **抽象产品角色**：它是具体产品继承的父类或者是实现的接口。在java中一般有抽象类或者接口来实现。
+>  **具体产品角色**：具体工厂角色所创建的对象就是此角色的实例。在java中由具体的类来实现。
+
+```java
+//抽象产品（Bmw和Audi同理）  
+abstract class BenzCar{  
+    private String name;  
+      
+    public abstract void drive();  
+      
+    public String getName() {  
+        return name;  
+    }  
+    public void setName(String name) {  
+        this.name = name;  
+    }  
+}  
+//具体产品（Bmw和Audi同理）  
+class BenzSportCar extends BenzCar{  
+    public void drive(){  
+        System.out.println(this.getName()+"----BenzSportCar-----------------------");  
+    }  
+}  
+class BenzBusinessCar extends BenzCar{  
+    public void drive(){  
+        System.out.println(this.getName()+"----BenzBusinessCar-----------------------");  
+    }  
+}  
+  
+abstract class BmwCar{  
+    private String name;  
+      
+    public abstract void drive();  
+      
+    public String getName() {  
+        return name;  
+    }  
+    public void setName(String name) {  
+        this.name = name;  
+    }  
+}  
+class BmwSportCar extends BmwCar{  
+    public void drive(){  
+        System.out.println(this.getName()+"----BmwSportCar-----------------------");  
+    }  
+}  
+class BmwBusinessCar extends BmwCar{  
+    public void drive(){  
+        System.out.println(this.getName()+"----BmwBusinessCar-----------------------");  
+    }  
+}  
+  
+abstract class AudiCar{  
+    private String name;  
+      
+    public abstract void drive();  
+      
+    public String getName() {  
+        return name;  
+    }  
+    public void setName(String name) {  
+        this.name = name;  
+    }  
+}  
+class AudiSportCar extends AudiCar{  
+    public void drive(){  
+        System.out.println(this.getName()+"----AudiSportCar-----------------------");  
+    }  
+}  
+class AudiBusinessCar extends AudiCar{  
+    public void drive(){  
+        System.out.println(this.getName()+"----AudiBusinessCar-----------------------");  
+    }  
+}  
+//抽象工厂  
+abstract class Driver3{  
+    public abstract BenzCar createBenzCar(String car) throws Exception;  
+      
+    public abstract BmwCar createBmwCar(String car) throws Exception;  
+      
+    public abstract AudiCar createAudiCar(String car) throws Exception;  
+}  
+//具体工厂  
+class SportDriver extends Driver3{  
+    public BenzCar createBenzCar(String car) throws Exception {  
+        return new BenzSportCar();  
+    }  
+    public BmwCar createBmwCar(String car) throws Exception {  
+        return new BmwSportCar();  
+    }  
+    public AudiCar createAudiCar(String car) throws Exception {  
+        return new AudiSportCar();  
+    }  
+}  
+class BusinessDriver extends Driver3{  
+    public BenzCar createBenzCar(String car) throws Exception {  
+        return new BenzBusinessCar();  
+    }  
+    public BmwCar createBmwCar(String car) throws Exception {  
+        return new BmwBusinessCar();  
+    }  
+    public AudiCar createAudiCar(String car) throws Exception {  
+        return new AudiBusinessCar();  
+    }  
+}  
+  
+public class BossAbstractFactory {  
+  
+    public static void main(String[] args) throws Exception {    
+        Driver3 d = new BusinessDriver();  
+        AudiCar car = d.createAudiCar("");  
+        car.drive();  
+    }  
+}  
+```
+
+
+
 ## 📚Linux
 
 ### 🏷 Linux虚拟地址到物理地址转换
@@ -5807,9 +6066,11 @@ REST：Repersentational State Transfer (表象层状态转变)
 
 7. 按需编码、可制定代码
 
-
-
 [面试官：你连RESTful都不知道我怎么敢要你](https://www.cnblogs.com/zhangmumu/p/11936262.html)
+
+#### 场景
+
+[微信朋友圈是怎么做的架构？](https://www.jianshu.com/p/3fb3652ff450)
 
 ## 参考
 
