@@ -198,6 +198,8 @@ assert(p != nullptr);
 
 c/c++不提供垃圾回收机制，因此需要对堆中的数据进行及时的销毁，防止内存泄漏，使用 `free, delete` 
 
+
+
 ### 🏷 野指针与悬空指针
 
 野指针：wild pointer没有经过初始化的指针
@@ -243,6 +245,14 @@ c/c++不提供垃圾回收机制，因此需要对堆中的数据进行及时的
 3、realloc：更改以前分配的内存长度（增加或减少）。当增加长度时，可能需将以前分配区的内容移动另一个足够大的区域，而新增区域内的初始化值则不确定
 
 4、alloca：在栈上申请内存。程序在出栈的时候，会自动释放内存。但是需要注意的是，alloca不具备可移植性。
+
+### linux环境内存分配原理 malloc info
+
+[linux环境内存分配原理 malloc info](https://www.cnblogs.com/dongzhiquan/p/5621906.html)
+
+### 系统调用和库函数的区别
+
+[系统调用和库函数的区别](https://cloud.tencent.com/developer/article/1497773)
 
 ### 🏷 #pragma pack(n)
 
@@ -297,6 +307,20 @@ static test
 #pragma pack(pop)  // 恢复对齐状态 
 ```
 
+### 🏷C++ --堆和栈详解
+
+[C++ 栈和堆的区别](https://www.cnblogs.com/lxmhhy/p/3559212.html)
+
+https://blog.csdn.net/wo17fang/article/details/52244238
+
+**内存分配方面**：
+
+堆：操作系统有一个记录空闲内存地址的链表，当系统受到程序的申请时，会遍历该链表，寻找第一个空间大于所申请空间的堆节点，然后将该节点从空闲节点链表中删除，并将该节点分配给程序，另外，对于大多数系统，会在这块内存空间中的首地址处记录本次分配的大小，这样代码中的delete语句才能正确的释放本内存空间。我们常说的内存泄漏，最常见的就是堆泄漏
+
+栈：
+
+**程序的内存分配：**
+
 ### 🏷 c与C++区别
 
 设计思想上:
@@ -310,6 +334,10 @@ C++具有封装、继承、多态性
 C++与C相比，增加了许多类型安全功能，比如强制类型转换
 
 C++支持范式编程，如模板类，函数模板等
+
+封装：
+
+封装就是将抽象得到的数据和行为（或功能）相结合，形成一个有机的整体，也就是将数据与操作数据的源代码进行有机的结合，形成“类”，其中数据和函数都是类的成员。
 
 ### 🏷 cast转换
 
@@ -352,6 +380,36 @@ c. 用于各种隐式转换，比如非const转const, void*转指针等。
 4、reinterpret_cast
 
 几乎什么都可转，比如int转指针
+
+### 🏷 string注意事项
+
+c++多用string 代替char* char[]
+
+1. 当我们要存储一个串，但是不知道其需要多少内存时，用string来处理最好不过了
+
+2. string的内存管理是有系统处理，除非系统的内存池用完，一般情况下，不用人为的去管理内存，防止内存的溢出。
+
+```c++
+//转换
+string s1 = "123";
+const char *r1 = s1.data();
+const char *r2 = s1.c_str();
+
+//string 转char*
+int iLength = str.length();
+char* s3 = (char*)malloc((iLength+1)*sizeof(char));
+str.copy(s3, iLength, 0);
+free(s3);
+//string 转char []
+char s4[iLength+1];
+for(int i=0; i<iLength; i++)
+{
+    s4[i] = str[i];
+}
+//char *转string
+char* q = "67890";
+string qq = q;
+```
 
 ### 🏷 指针与引用
 
@@ -808,6 +866,8 @@ Share_ptr是为了解决auto_ptr在对象所有权上的局限性
 
 [shared__ptr是否是线程安全的](https://beamnote.com/2014/is-shared-ptr-thread-safe/)
 
+[**C++ 动手实现一个shared_ptr**](http://blog.leanote.com/post/shijiaxin.cn@gmail.com/C-shared_ptr)
+
 **成员函数**：
 
 use_count返回引用计数个数
@@ -1219,6 +1279,45 @@ int a[4] = {11,2,33,4};
 sort(a, a+4, [=](int x, int y)->bool {return x%10 < y % 10;});
 ```
 
+### 🏷 c++静态库与动态库的区别
+
+对于unix系统，静态库为.a ，动态库为.so。而Windows系统静态库为.lib，动态库为.dll。
+
+回顾程序编译的四个步骤：
+
+预编译->编译->汇编->链接
+
+静态库和动态库就是在链接节点行为不同，静态库会在链接阶段将汇编生成的目标文件与引用的库一起链接打包到可执行文件中。
+
+静态库特点：
+
+- 静态库对函数的链接在编译时期完成
+- 程序在运行时与函数库再无关系
+- 浪费资源空间，因为所有相关的目标文件都会被链接到一个可执行文件中
+
+动态链接库
+
+动态库在程序编译时并不会被连接到目标代码中，而是在程序运行是才被载入。**不同的应用程序如果调用相同的库，那么在内存里只需要有一份该共享库的实例**，规避了空间浪费问题。动态库在程序运行是才被载入，也解决了静态库对程序的更新、部署和发布页会带来麻烦。用户只需要更新动态库即可，**增量更新**。
+
+使用动态库的原因，正式因为静态库很耗费内存空间，并且静态库更新简直是灾难，如果库源码发生变动，那么静态库将不得不重新生成。
+动态库特点如下：
+
+- 延迟加载一些库函数，既用到才加载
+- 动态库可以同时被多个程序共享，节省内存
+
+### 虚函数表是针对类还是针对对象的？虚表存在哪里？
+
+- 虚函数表属于类，类的所有对象共享这个类的虚函数表。
+- 不同对象虚函数表是一样的（虚函数表的第一个函数地址相同）；
+- 每个对象内部都保存一个指向该类虚函数表的指针vptr，每个对象的vptr的存放地址都不一样，但是都指向同一虚函数表。
+
+https://blog.csdn.net/qq_28584889/article/details/88756022
+
+结论
+
+1. 虚函数表属于类，类的所有对象共享这个类的虚函数表。
+2. 虚函数表由编译器在编译时生成，保存在.rdata只读数据段。
+
 ### 🏷 面试问题
 
 **当`i`是一个整数的时候`++i`和`i++`哪个更快一点？ `i++`和`++i`的区别是什么？**
@@ -1294,6 +1393,40 @@ delete
 Base class构造期间virtual函数绝不会下降到derived class阶层。
 
 在析构函数中，一旦析构函数被执行，对象内的derived class成员变量便呈未定义值。C++视他们不存在。
+
+## 📚深度探索C++对象模型
+
+### 🏷 c++类对象创建过程
+
+https://my.oschina.net/alphajay/blog/5029?from=rss
+
+#### 分配空间
+
+创建c++类对象的第一步就是为其分配内存空间。<font color="red">对于全局对象，静态对象以及分配在栈区域的对象，它们的内存分配在编译阶段就完成了</font>，<font color="blue">对于分配在堆区域内的对象，它们的分配则是在运行时动态进行的。</font>
+
+内存空间的分配过程涉及到两个关键的问题：需要分配空间的大小，即类对象的大小
+
+<font color="red">全局对象和静态。编译器会为它们划分一个独立的段（全局段）为它们分配足够的内存空间，一般不会出现内存空间不够的问题。</font>
+
+分配在栈区域的对象。<font color="orange">栈区域的大小由编译器的设置决定，不管具体的设置怎样，总归是有一个具体的值，所以栈空间是有限的</font>，在<font color="blue">栈区域内同时分配超过空间大小的对象会导致栈溢出。</font>由于栈区域的分配是在编译阶段完成的，所以在栈溢出是会抛出编译阶段异常
+
+分配在堆的对象，<font color="red">堆内存空间的分配是在运行时进行的，由于对空间也是有限的，在堆区域内试图分配大量的对象对导致分配失败，</font>通常情况下抛出运行时异常，或返回一个没有意义的值（通常是0)
+
+#### 初始化
+
+容易混淆：初始化（Initialization)  与  赋值(Assignment)。 初始化早于赋值，它是随着对象的诞生一起进行的。而赋值是在对象诞生以后又给予它一个新的值。
+
+类对象的初始化，实际上是对类对象内的所有数据成员进行初始化。
+
+```c++
+CInnerClass(int id):m_iID(id) {}
+```
+
+初始化列表先于构造函数体内的代码执行；
+
+初始化列表确实执行的是数据成员的初始化过程
+
+**对象的初始化是通过初始化列表来完成，而对象的赋值则才是通过构造函数，或者更准确的说应该是构造函数的实现体。**
 
 ## 📚STL
 
@@ -2035,7 +2168,11 @@ void func(TreeNode* root)
 
 2、左旋
 
+​	以某个结点作为支点，其右子结点变成支点的父节点，右子结点的左子结点变成支点的右子结点。
+
 3 、右旋
+
+​	以某一个结点为支点，其左子结点变成支点的父节点，左子结点的右子结点变成支点的左子结点。
 
 **❓红黑树、B+树、B树的区别？**
 
@@ -2938,6 +3075,8 @@ PCB包括：
 
 ##### 信号量
 
+[Linux进程间通信——使用信号量](https://blog.csdn.net/ljianhui/article/details/10243617)
+
 信号量是一个整型变量，可以对其执行down和up操作，即PV操作
 
 * down：如果信号量大于0，执行-1操作；如果信号量等于0，进程睡眠，等待信号量大于0；
@@ -3161,7 +3300,25 @@ reader () {  // 读者进程
 }
 ```
 
+#### 孤儿进程与僵尸进程
+
+[总结](https://www.cnblogs.com/Anker/p/3271773.html)
+
+#### 进程和线程、协程的区别
+
+* 进程：具有一定独立功能的程序关于某个数据集合上的一次运行活动，进程是系统进行资源资源分配和调度的一个独立单位。每个进程都有自己的独立内存空间，不同进程通过进程间通信来通信，所以上下文进程间的切换开销比较大，但相对比较稳定。
+
+* 线程：是一个进程的实体，CPU调度和分派的基本单位，它是比进程更小的能独立运行的基本单位，线程自己基本上不拥有系统资源，只拥有一点在运行中必不可少的资源（程序计数器，一组寄存器和栈），但是它可与同属一个进程的其他的线程共享所有的全部资源。
+
+  线程间通信主要通过共享内存
+
+  上下文切换很快，资源开销较少，但相比进程不稳定，更容易丢失数据
+
+* 协程：是一种用户态的轻量级线程，不被操作系统内核所管理，完全是由用户态控制执行，不会像线程切换那样消耗资源。
+
 #### 进程通信
+
+[Linux进程间通信——使用信号](https://blog.csdn.net/ljianhui/article/details/10128731)
 
 管道、系统IPC（消息队列、信号、共享内存），套接字socket
 
@@ -3173,11 +3330,27 @@ reader () {  // 读者进程
 
 管道必须有父进程，数据是字节流，没有数据结构。
 
+http://c.biancheng.net/view/1213.html
+
+管道是单向的，只允许单向通行，如果需要双向通信，那么就要采取两个管道，而每个管道向不同方向发送数据。
+
+```c++
+int pipe(int fd[2]);  // UNIX系统下创建管道函数
+```
+
+这个函数创建一个管道，以便通过文件描述符 int fd[] 来访问：fd[0] 为管道的读出端，而 fd[1] 为管道的写入端。UNIX 将管道作为一种特殊类型的文件。因此，访问管道可以采用普通的系统调用 read() 和 write()。
+
+父进程向管道写，而子进程从管道读。重要的是要注意，父进程和子进程开始就关闭了管道的未使用端。
+
 ##### 消息队列
 
 是有消息的链表，存放在内核中并由消息队列标识符标识。消息队列克服了信号传递信息少，管道只能承载无格式字节流以及缓冲区大小限制问题
 
 消息队列可以多个不相干的进程来传递数据。而且message作为一个字节序列存储，是一个有意义的结构化。
+
+https://blog.csdn.net/LEON1741/article/details/77934508
+
+
 
 ##### 共享内存
 
@@ -3193,7 +3366,16 @@ reader () {  // 读者进程
 
 信号是一种比较复杂的通信方式，用于通知接收进程某个事件已发生。
 
+系统先定义好的某些特定的事件，可以被发生，也可以被接受。发生和接受的主体都是进程。
+
+3.进程对信号的响应方式：当进程发生时，用户可以要求进程以以下三种方式之一对信号做出响应：
+        a.默认信号（SIG_DFL）：按系统默认方式处理，大部分信号的默认操作是终止操作，且所有的实时信号的默认动作都是终止进程。
+        b.忽略信号(SIG_IGN)：大多数信号都可以使用这种方式进行处理，但是SIGKILL和SIGSTOP这两个信号不能被忽略，同时这两个信号也不能捕获和阻塞。此外，如果会忽略某些由硬件异常产生的信号（如非法存储访问或除以0），则进程的行为是不可预测的。
+        c.自定义信号：对于自定义的信号，可以为其指定信号处理函数，信号发生时该函数自动被调用，在该函数内部实现对信号的处理。
+
 参考  [进程间通信的方式——信号、管道、消息队列、共享内存](https://www.cnblogs.com/LUO77/p/5816326.html)
+
+https://blog.csdn.net/wh_0727/article/details/84074266
 
 #### 线程之间的通信方式
 
@@ -3315,6 +3497,67 @@ reader () {  // 读者进程
    > 2. 允许每个进程有自己定制的调度算法，如某些应用程序中垃圾回收线程
    >
    > 缺点：在多处理机下，同一个进程中的线程只能在一个处理机下分时复用
+
+### 🏷 提高计算机的并发能力
+
+[提高计算机的并发能力](https://my.oschina.net/javaroad/blog/4382771)
+
+### 🏷 中断和中断处理流程
+
+转自：https://www.cnblogs.com/jdksummer/articles/2687265.html
+
+**中断：**由于接收到来自外围硬件（相对于中央处理器和内存）的异步信号或来自软件的同步信号，而进行相应的硬件/软件处理。发出这样的信号称为进行中断请求。<font color="blue">硬件中断导致处理器通过一个上下文切换来保存执行状态（以程序计数器和程序状态字等寄存器信息为主）；</font>
+
+中断是一种是CPU中止正在执行的程序而转去处理特殊事件的操作，这些引起中断的事件称为中断源，它们可能来自外设的输入输出请求，也可能是计算机的一些异常事故或其他内部原因
+
+**中断的作用**
+
+* 并行操作
+* 硬件故障报警与处理
+* 支持多道程序并发运行，提高计算机系统的运行效率
+* 支持实时处理功能
+
+**分类**
+
+按中断源：
+
+1. 内中断：即程序运行错误引起的中断
+2. 外中断：即有外部设备、接口引起的中断
+3. 软件中断：在写程序中的语句
+
+**中断处理过程**
+
+1. 中断响应的事前准备
+
+   > 系统将所有的中断信号统一进行了编号（一共256个：0-255），这个号称为中断向量，具体哪个中断向量表示哪种中断是规定好的
+   >
+   > 中断向量和中断服务程序在IDT（中断向量表）中对于
+   >
+   > 中断服务程序具体负责处理中断的代码是由软件（也就是操作系统负责的），这部分代码是属于操作系统内核代码，也就是说从CPU检测中断信号到加载中断服务程序以及从中断服务程序中恢复执行被暂停的程序，这个流程基本上是硬件确定下来的，而具体的中断向量和服务程序的对应关系设置和中断服务程序的内容是由操作系统确定的。
+
+2. CPU检查是否有中断/异常信号
+
+   > CPU在执行完当前程序的每一条指令后，都会去确认在执行刚才的指令过程中中断控制器是否发送过来中断请求，如果有那么CPU就会在相应的时钟脉冲到来时从总线上读取中断请求对应的中断向量
+   >
+   > 对于异常和系统调用这样的软中断，因为中断向量是直接给出的，所以和通过IRQ（中断请求）线发送的硬件中断请求不同，不会再专门去取其对应的中断向量
+
+3. 根据中断向量的到IDT（中断向量表）中取得处理这个中断向量的中断程序的段选择符
+
+4. 根据取得的段选择符到GDT中找到相应的段描述符
+
+5. CPU根据特权级的判断设定即将运行的中断服务程序要使用的栈的地址
+
+6. 保护当前程序的现场
+
+   > CPU开始利用栈保护被暂停执行的程序现场：以此压入当前程序使用的flags,cs,eip,errorCode
+
+7. 跳转到中断服务程序的第一条指令开始执行
+
+   > CPU利用中断服务程序的段描述将其第一条指令的地址加载到cs和eip寄存器中，开始执行中断服务程序。这意味着先前的程序被暂停执行，中断服务程序正式开始工作
+
+8. 中断服务程序处理完毕，恢复执行先前的中断的进程
+
+   > 在每个中断服务程序的最后，必须有中断完成返回先前程序的指令，这就是iret。程序执行这条返回指令时，会从栈里弹出先前保存的被暂停程序的现场信息。重新开始执行被暂停程序。
 
 ### 🏷 内存管理
 
@@ -3574,6 +3817,14 @@ IGMP(互联网组管理协议)
 **RARP（逆地址解析协议）**
 
 > 如主机只知道自己的物理地址，而不知道IP地址，发送RARP协议包到--->RARP服务器---->返回响应包
+>
+> RARP的工作过程如下：
+>
+> 1. 网络上每台设备都会有一个独一无二的硬件地址，一般是由设备厂商分配的MAC地址。发送主机从网卡上读取MAC地址，然后在网络上发送一个RARP请求的广播数据包，请求任何收到此请求的RARP服务器分配一个IP地址；
+> 2. RARP服务器收到此请求后，检查其RARP表项，查找该MAC地址对应的IP地址；
+> 3. 如果存在，RARP服务器就给发送主机回复一个响应数据包，并将此IP地址提供给对方主机使用；
+> 4. 如果不存在，RARP服务器对此不做任何的响应；
+> 5. 发送主机收到从RARP服务器的响应信息，就利用得到的IP地址进行通讯，如果一直没有收到RARP服务器的响应消息，表示初始化失败。
 
 --------------------------------
 
@@ -3919,6 +4170,12 @@ DNS（Domain Name Service，域名服务），用于完成地址查找，邮件�
 
 源端口和目的端口分别包含了16bit，此处限定了计算机的端口数量2^16
 
+https://www.cnblogs.com/Allen-rg/p/7190042.html
+
+紧急标志+紧急数据指针：紧急标志通知对端，我放了一个紧急数据在数据流中
+
+紧急数据指针指向了紧急数据最后一个字节的下一个字节。
+
 ##### TCP 建立连接----三次握手
 
 1、客户端发送一个SYN段指明打算连接的服务器端口，以及初始序号（ISN）
@@ -4029,6 +4286,10 @@ Client 发送 SYN 包给 Server 后挂了，Server 回给 Client 的 SYN-ACK 一
 3. 拥塞控制
 4. 差错控制
 
+#### 重传——TCP的重要事件
+
+https://zhuanlan.zhihu.com/p/101702312
+
 ##### 数据分片
 
 数据从主机传送到另一个主机往往要经过路由器，网关等设备。这些设备都要对经过的数据进行处理。由于这些设备处理数据的能力有有一定限制，不能处理超出额定字节的数据，所以发送的时候需要确定发送数据包的最大字节数。
@@ -4107,6 +4368,16 @@ TCP 流控制过程如图所示。
 
 这样可以达到：在TCP通信时，网络吞吐量呈逐渐上升，并且随着拥堵来降低吞吐量，在进入慢慢上升过程，网络不会轻易发送瘫痪。
 
+##### 滑动窗口最大能设置成多大?
+
+[链接：](https://www.jianshu.com/p/15788a9e9006)
+
+由于TCP报文头现在2^16，可以通过窗口缩放因子增加
+
+**窗口缩放因子**
+
+窗口缩放在RFC 1072中引入并在RFC 1323中进行了改进。实际上，窗口缩放只是将16位窗口字段扩展为32位长度。解决方案是定义TCP选项以指定计数，通过该计数，TCP标头字段应按位移位以产生更大的值。
+
 ##### TCP黏包问题
 
 TCP是一个基于字节流的传输服务，“流”意味着TCP所传输的数据是没有边界的。所以可能会出现两个数据包黏在一起的情况
@@ -4117,6 +4388,43 @@ TCP是一个基于字节流的传输服务，“流”意味着TCP所传输的�
 * 包头加上包体的长度
 * 数据包之间设立边界，如添加特殊字符`\r\n`
 * 使用更复杂的应用层协议
+
+##### 能解释一下沾包和拆包吗，以及为什么？
+
+https://www.cnblogs.com/wade-luffy/p/6165671.html
+
+TCP是一个基于字节流的传输服务，“流”意味着TCP所传输的数据是没有边界的。所以可能会出现两个数据包黏在一起的情况
+
+假设客户端分别发送了两个数据包D1和D2给服务器端，由于服务器一次读取的字节数是不确定的，故可能存在以下情况：
+
+1. 服务端分两次读取到两个独立的包，分别是D1和D2，没有粘包和拆包
+2. 服务端一次接收到了两个数据包，D1和D2粘合在一起，被称为TCP粘包
+3. 服务端分两次读取到了两个数据包，D1包的全部和D2包的部分，D2包的剩余部分，这称为TCP拆包。
+4. 服务端分两次读取到了两个数据包，第一次读取到了D1包的部分内容D1_1，第二次读取到了D1包的剩余内容D1_2和D2包的整包。
+
+如果此时服务端TCP接收滑窗非常小，而数据包D1和D2比较大，很有可能会发生第五种可能，即服务端分多次才能将D1和D2包接收完全，期间发生多次拆包。
+
+##### TCP粘包/拆包发生的原因
+
+问题产生的原因有三个，分别如下。
+
+（1）应用程序write写入的字节大小大于套接口发送缓冲区大小；
+
+（2）进行MSS大小的TCP分段；
+
+（3）以太网帧的payload大于MTU进行IP分片。
+
+##### 粘包问题的解决策略
+
+ 由于底层的TCP无法理解上层的业务数据，所以在底层是无法保证数据包不被拆分和重组的，这个问题只能通过上层的应用协议栈设计来解决，根据业界的主流协议的解决方案，可以归纳如下。
+
+（1）消息定长，例如每个报文的大小为固定长度200字节，如果不够，空位补空格；
+
+（2）在包尾增加回车换行符进行分割，例如FTP协议；
+
+（3）将消息分为消息头和消息体，消息头中包含表示消息总长度（或者消息体长度）的字段，通常设计思路为消息头的第一个字段使用int32来表示消息的总长度；
+
+（4）更复杂的应用层协议。
 
 #### TCP分段与IP分片
 
@@ -4289,7 +4597,16 @@ fd 为要读取的文件的描述符，buf 为要接收数据的缓冲区地址�
 
 #### IO复用
 
+https://www.cnblogs.com/aspirant/p/9166944.html
+
+select ，poll，epoll都是IO多路复用的机制。IO多路复用就是通过一种机制，可以监视多个描述符，一旦某个描述符就绪，就能通知程序进行相应的读写操作。但是select，poll，epoll本质上都是同步IO，因为他们都需要在读写事件就绪后自己负责进行读写，也就是说这个读写过程是阻塞的。
+
 ##### select
+
+select本质上就是通过设置或检查存放的fd标志位的数据结构来进行下一步处理：这样带来的缺点是
+
+1. 单个进程可监视的fd文件数量是有限的。32默认1024,63默认2048
+2. 对所有描述符进行轮询，每次轮询完之后还要重新赋值
 
 ```c++
 int select(int maxfd, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval* timeout);
@@ -4356,6 +4673,16 @@ while(1)
 
 ##### poll
 
+poll本质上和select没有区别，它将用户传入的描述符数组传入到内核空间，然后查询每个fd对应的设备状态，如果设备就绪则就在设备等待队列中加入一项并继续遍历，如果遍历完所有fd没有发现就绪设备，则挂起当前进程，直到设备就绪或者主动超时，被唤醒后继续遍历fd
+
+它没有最大连接数的限制，因为它是基于链表来存储的
+
+缺点：
+
+1. 大量的fd的数组被整体复制于用户态和内核地址空间之间，
+
+2. 水平触发，如果报告了fd后，没有被处理，下次poll时还会报告
+
 ```c++
 int poll(struct pollfd *fds, unsigned int nfds, int timeout);
 ```
@@ -4394,7 +4721,7 @@ int epoll_ctl(int epfd, int op, int fd, struct epoll_event *event);
 int epoll_wait(int epfd, struct epoll_event *events, int maxevents, int timeout);
 ```
 
-`epoll_ctl()`用于向内核注册新的描述符或者改变某个文件描述符的状态。已注册的描述符在内核中被维护在一颗红黑树上，通过回调函数内核将IO准备好的文件描述符加入到一个链表中管理，进程调用`epoll_wait()`便可以得到事件完成的描述符。
+`epoll_ctl()`用于向内核注册新的描述符或者改变某个文件描述符的状态。已注册的描述符在内核中被维护在一颗红黑树上，通过回调函数内核将IO准备好的文件描述符加入到一个链表中管理，进程调用`epoll_wait()`便可以得到事件完成的描述符。 
 
 从上面的描述可以看出，epoll只需将描述符从进程缓冲区向内核缓冲区拷贝一次，并且进程不需要通过轮询来获取事件完成的描述符
 
@@ -4873,6 +5200,23 @@ https://www.cnblogs.com/lmj612/p/10598971.html
 
 MVCC的实现，是通过保存数据在某个时间点的快照来实现的。也就是说，不管需要执行多长时间，每个事务看到的数据是一致的。
 
+https://techlog.cn/article/list/10183404
+
+#### **MySQL 是如何解决幻读的**
+
+**1. 多版本并发控制（MVCC）（快照读/一致性读）**
+
+**2. next-key 锁 （当前读）**
+
+next-key 锁包含两部分：
+
+-  记录锁（行锁）
+-  间隙锁
+
+记录锁是加在索引上的锁，间隙锁是加在索引之间的。（思考：如果列上没有索引会发生什么？）
+
+原理：将当前数据行与上一条数据和下一条数据之间的间隙锁定，保证此范围内读取的数据是一致的。
+
 ### 🏷 视图和游标
 
 视图：
@@ -4886,6 +5230,20 @@ MVCC的实现，是通过保存数据在某个时间点的快照来实现的。�
 ### 🏷 触发器
 
 触发器是与表相关的数据库对象，在满足定义条件时触发，并执行触发器定义的语句集合。触发器的这种特性可以协助应用在数据库端确保数据库的完整性。
+
+### 🏷mysql的limit用法、逻辑分页和物理分页
+
+另：删除有逻辑删除与物理删除
+
+https://blog.csdn.net/lvoelife/article/details/81943070
+
+| 物理分页                                                     | 逻辑分页                                                     | cool       |
+| ------------------------------------------------------------ | ------------------------------------------------------------ | ---------- |
+| 物理分页依赖的是某一物理实体，这个物理实体就是数据库，比如MYSQL数据库提供了关键字limit，返回的是分页结果 | 逻辑分页依赖的是程序员编写代码，数据库返回的不是分页结果，而是全部数据，然后在由程序员通过代码获取分页数据，常用的操作是一次性从数据库中查询出全部数据并存储在list集合中，因为list集合有序，在根据索引获取指定范围的数据 | 概念       |
+| 每次都要访问数据库，对数据库造成的负担大                     | 只需访问一次数据库                                           | 数据库负担 |
+| 每次只读取一部分数据，占用的内存空间较小                     | 一次性将数据读取到内存中，占用较大的内存空间。               | 服务器负担 |
+| 每次需要时都要访问数据库，能够获取数据库的最新状态，实时性强 | 因为一次性读入到内存，数据发生了改变，数据的最新状态无法实时反映到操作中 | 实时性     |
+| 数据库量大、更新频繁的场合                                   | 数据量较小，数据稳定的场合                                   | 使用场合   |
 
 ### 🏷 Innodb引擎和Myisam引擎
 
@@ -5013,7 +5371,23 @@ MySQL中可以设置join_buffer_size 默认是256K
 
 ![img](http://www.xyongs.cn/image/join_3-7-12.png)
 
+##### mysql 语句执行顺序
 
+https://www.cnblogs.com/163yun/p/9448205.html
+
+- (1) `from`：对左表`left-table`和右表`right-table`执行笛卡尔积(a*b)，形成虚拟表VT1;
+- (2) `on`: 对虚拟表VT1进行`on`条件进行筛选，只有符合条件的记录才会插入到虚拟表VT2中;
+- (3) `join`: 指定`out join`会将未匹配行添加到VT2产生VT3,若有多张表，则会重复(1)~(3);
+- (4) `where`: 对VT3进行条件过滤，形成VT4, `where`条件是从左向右执行的;
+- (5) `group by`: 对VT4进行分组操作得到VT5;
+- (6) `cube | rollup`: 对VT5进行`cube | rollup`操作得到VT6;
+- (7) `having`: 对VT6进行过滤得到VT7;
+- (8) `select`: 执行选择操作得到VT8，本人看来VT7和VT8应该是一样的;
+- (9) `distinct`: 对VT8进行去重，得到VT9;
+- (10) `order by`: 对VT9进行排序，得到VT10;
+- (11) `limit`: 对记录进行截取，得到VT11返回给用户。
+
+Note: `on`条件应用于连表过滤，`where`应用于on过滤后的结果（有`on`的话），`having`应用于分组过滤
 
 ### 🏷 数据库Q&A
 
@@ -5210,6 +5584,74 @@ redis-cli -h host -p port -a password  远程进入
 | multi                       | 开启一个事务                                                 |
 | exec                        | 执行事务                                                     |
 
+### 常见的缓存更新策略剖析
+
+https://zhuanlan.zhihu.com/p/86396877
+
+作者：是瑶瑶公主吖
+链接：https://www.nowcoder.com/discuss/513385?type=2&channel=1009&source_id=discuss_terminal_discuss_hot
+来源：牛客网
+
+#### 缓存穿透是什么？⭐
+
+缓存穿透指查询不存在的数据，缓存层和存储层都不会命中，导致不存在的数据每次请求都要到存储层查询，可能会使后端负载增大。
+
+解决：① 缓存空对象，如果一个查询返回结果为 null，仍然缓存，为其设置很短的过期时间。② 布隆过滤器，将所有可能存在的数据映射到一个足够大的 Bitmap 中，在用户发起请求时首先经过布隆过滤器的拦截，一个一定不存在的数据会被拦截。
+
+#### 缓存击穿是什么？⭐⭐
+
+对于热数据的访问量非常大，在其缓存失效的瞬间，大量请求直达存储层，导致服务崩溃。
+
+会造成某一时刻数据库请求量过大，压力剧增。
+
+解决：① 加锁互斥，当一个线程访问后，缓存数据会被重建。② 永不过期，为热点数据不设置过期时间。
+
+上面的现象是多个线程同时去查询数据库的这条数据，那么我们可以在第一个查询数据的请求上使用一个 互斥锁来锁住它。
+
+其他的线程走到这一步拿不到锁就等着，等第一个线程查询到了数据，然后做缓存。后面的线程进来发现已经有缓存了，就直接走缓存。
+
+#### 缓存雪崩是什么？⭐
+
+如果缓存层因为某些问题不能提供服务，所有请求都会到达存储层，对数据库造成巨大压力。
+
+解决：① 保证高可用性，使用集群。② 依赖隔离组件为后端限流并降级，降级机制在高并发系统中使用普遍，例如在推荐服务中，如果个性化推荐服务不可用，可以降级补充热点数据，避免前端页面空白。③ 构建多级缓存，增加本地缓存，降低请求直达存储层概率。
+
+#### 缓存预热
+
+缓存预热就是系统上线后，将相关的缓存数据直接加载到缓存系统。这样就可以避免在用户请求时候，先查询数据库，然后在将数据缓存的问题。用户直接查询事先被预热的缓存数据。
+
+如果不进行预热，那么Redis初始状态数据为空，系统上线初期，对于高并发的流量，都会访问数据库，对数据库造成流量的压力。
+
+解决方案：
+
+1. 数据量不大的时候，工程启动的时候进行加载缓存动作。
+2. 数据量大的时候，设置一个定时任务脚本，进行缓存的刷新。
+3. 数据量太大时候，优先保证热点数据进行提前加载到缓存。
+
+#### 缓存降级
+
+就是缓存失效或缓存服务器挂掉情况下，我们也不去访问数据库。我们直接访问内存部分数据缓存或直接返回默认数据。
+
+对于应用的首页，一般是访问量非常大的地方，首页里面往往包含了部分推荐商品的展示信息、这些信息往往都会放到缓存中存储，同时我们为了避免缓存的异常情况，对热点商品数据也存储到了内存中。同时内存还保留了一些默认的商品信息。
+
+降级一般是有损的操作，所以尽量减少降级对于业务的影响程度。
+
+#### 解决热点数据集中失效问题
+
+设置不同的失效时间
+
+互斥锁
+
+https://juejin.im/post/6844903807797690376
+
+[Redis持久化](https://segmentfault.com/a/1190000002906345)
+
+### 基于Redis的分布式锁实现
+
+[基于Redis的分布式锁实现](https://juejin.im/post/6844903830442737671)
+
+
+
 ## 📚 设计模式
 
 ### 🏷 单例模式
@@ -5248,6 +5690,271 @@ public:
 3. 上述单例模式是线程不安全的，如果碰巧有多个线程在同时调用该方法，那么可能被多次构造。
 
    可以在存在竞争的地方加上互斥锁。
+
+### 🏷 简单工厂，工厂方法，抽象工厂
+
+> 作者：激情的狼王
+> 链接：https://www.jianshu.com/p/6d447cea14c7
+> 来源：简书
+> 著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。
+
+#### 简单工厂
+
+> **工厂类角色**：这是本模式的核心，含有一定的商业逻辑和判断逻辑，根据逻辑不同，产生具体的工厂产品。如例子中的Driver类。
+>  **抽象产品角色**：它一般是具体产品继承的父类或者实现的接口。由接口或者抽象类来实现。如例中的Car接口。
+>  **具体产品角色**：工厂类所创建的对象就是此角色的实例。在java中由一个具体类实现，如例子中的Benz、Bmw类。
+
+```java
+//抽象产品  
+abstract class Car{  
+    private String name;  
+      
+    public abstract void drive();  
+      
+    public String getName() {  
+        return name;  
+    }  
+    public void setName(String name) {  
+        this.name = name;  
+    }  
+}  
+//具体产品  
+class Benz extends Car{  
+    public void drive(){  
+        System.out.println(this.getName()+"----go-----------------------");  
+    }  
+}  
+  
+class Bmw extends Car{  
+    public void drive(){  
+        System.out.println(this.getName()+"----go-----------------------");  
+    }  
+}  
+  
+//简单工厂  
+class Driver{  
+    public static Car createCar(String car){  
+        Car c = null;  
+        if("Benz".equalsIgnoreCase(car))  
+            c = new Benz();  
+        else if("Bmw".equalsIgnoreCase(car))  
+            c = new Bmw();  
+        return c;  
+    }  
+}  
+  
+//main方法  
+public class BossSimplyFactory {  
+  
+    public static void main(String[] args) throws IOException {  
+        Car car = Driver.createCar("benz");  
+        car.setName("benz");  
+        car.drive();  
+    }  
+```
+
+#### 工厂方法模式
+
+> **抽象工厂角色**： 这是工厂方法模式的核心，它与应用程序无关。是具体工厂角色必须实现的接口或者必须继承的父类。在java中它由抽象类或者接口来实现。
+>  **具体工厂角色**：它含有和具体业务逻辑有关的代码。由应用程序调用以创建对应的具体产品的对象。在java中它由具体的类来实现。
+>  **抽象产品角色**：它是具体产品继承的父类或者是实现的接口。在java中一般有抽象类或者接口来实现。
+>  **具体产品角色**：具体工厂角色所创建的对象就是此角色的实例。在java中由具体的类来实现。
+
+```java
+//抽象产品  
+abstract class Car{  
+    private String name;  
+      
+    public abstract void drive();  
+      
+    public String getName() {  
+        return name;  
+    }  
+    public void setName(String name) {  
+        this.name = name;  
+    }  
+}  
+//具体产品  
+class Benz extends Car{  
+    public void drive(){  
+        System.out.println(this.getName()+"----go-----------------------");  
+    }  
+}  
+class Bmw extends Car{  
+    public void drive(){  
+        System.out.println(this.getName()+"----go-----------------------");  
+    }  
+}  
+  
+  
+//抽象工厂  
+abstract class Driver{  
+    public abstract Car createCar(String car) throws Exception;  
+}  
+//具体工厂（每个具体工厂负责一个具体产品）  
+class BenzDriver extends Driver{  
+    public Car createCar(String car) throws Exception {  
+        return new Benz();  
+    }  
+}  
+class BmwDriver extends Driver{  
+    public Car createCar(String car) throws Exception {  
+        return new Bmw();  
+    }  
+}  
+  
+public class Boss{ 
+    public static void main(String[] args) throws Exception {  
+        Driver d = new BenzDriver();  
+        Car c = d.createCar("benz");   
+        c.setName("benz");  
+        c.drive();  
+    }  
+} 
+
+```
+
+#### 抽象工厂
+
+> **抽象工厂角色**： 这是工厂方法模式的核心，它与应用程序无关。是具体工厂角色必须实现的接口或者必须继承的父类。在java中它由抽象类或者接口来实现。
+>  **具体工厂角色**：它含有和具体业务逻辑有关的代码。由应用程序调用以创建对应的具体产品的对象。在java中它由具体的类来实现。
+>  **抽象产品角色**：它是具体产品继承的父类或者是实现的接口。在java中一般有抽象类或者接口来实现。
+>  **具体产品角色**：具体工厂角色所创建的对象就是此角色的实例。在java中由具体的类来实现。
+
+```java
+//抽象产品（Bmw和Audi同理）  
+abstract class BenzCar{  
+    private String name;  
+      
+    public abstract void drive();  
+      
+    public String getName() {  
+        return name;  
+    }  
+    public void setName(String name) {  
+        this.name = name;  
+    }  
+}  
+//具体产品（Bmw和Audi同理）  
+class BenzSportCar extends BenzCar{  
+    public void drive(){  
+        System.out.println(this.getName()+"----BenzSportCar-----------------------");  
+    }  
+}  
+class BenzBusinessCar extends BenzCar{  
+    public void drive(){  
+        System.out.println(this.getName()+"----BenzBusinessCar-----------------------");  
+    }  
+}  
+  
+abstract class BmwCar{  
+    private String name;  
+      
+    public abstract void drive();  
+      
+    public String getName() {  
+        return name;  
+    }  
+    public void setName(String name) {  
+        this.name = name;  
+    }  
+}  
+class BmwSportCar extends BmwCar{  
+    public void drive(){  
+        System.out.println(this.getName()+"----BmwSportCar-----------------------");  
+    }  
+}  
+class BmwBusinessCar extends BmwCar{  
+    public void drive(){  
+        System.out.println(this.getName()+"----BmwBusinessCar-----------------------");  
+    }  
+}  
+  
+abstract class AudiCar{  
+    private String name;  
+      
+    public abstract void drive();  
+      
+    public String getName() {  
+        return name;  
+    }  
+    public void setName(String name) {  
+        this.name = name;  
+    }  
+}  
+class AudiSportCar extends AudiCar{  
+    public void drive(){  
+        System.out.println(this.getName()+"----AudiSportCar-----------------------");  
+    }  
+}  
+class AudiBusinessCar extends AudiCar{  
+    public void drive(){  
+        System.out.println(this.getName()+"----AudiBusinessCar-----------------------");  
+    }  
+}  
+//抽象工厂  
+abstract class Driver3{  
+    public abstract BenzCar createBenzCar(String car) throws Exception;  
+      
+    public abstract BmwCar createBmwCar(String car) throws Exception;  
+      
+    public abstract AudiCar createAudiCar(String car) throws Exception;  
+}  
+//具体工厂  
+class SportDriver extends Driver3{  
+    public BenzCar createBenzCar(String car) throws Exception {  
+        return new BenzSportCar();  
+    }  
+    public BmwCar createBmwCar(String car) throws Exception {  
+        return new BmwSportCar();  
+    }  
+    public AudiCar createAudiCar(String car) throws Exception {  
+        return new AudiSportCar();  
+    }  
+}  
+class BusinessDriver extends Driver3{  
+    public BenzCar createBenzCar(String car) throws Exception {  
+        return new BenzBusinessCar();  
+    }  
+    public BmwCar createBmwCar(String car) throws Exception {  
+        return new BmwBusinessCar();  
+    }  
+    public AudiCar createAudiCar(String car) throws Exception {  
+        return new AudiBusinessCar();  
+    }  
+}  
+  
+public class BossAbstractFactory {  
+  
+    public static void main(String[] args) throws Exception {    
+        Driver3 d = new BusinessDriver();  
+        AudiCar car = d.createAudiCar("");  
+        car.drive();  
+    }  
+}  
+```
+
+
+
+## 📚Linux
+
+### 🏷 Linux虚拟地址到物理地址转换
+
+https://blog.csdn.net/yetaibing1990/article/details/88344416
+
+CPU通过地址来访问内存中的单元，地址有虚拟地址和物理地址之分
+
+MMU（Memory Management Unit，内存管理单元）
+
+如果CPU启用了MMU，CPU核发出的地址将会被MMU截获，从CPU到MMU的地址称为虚拟地址，而MMU将这个地址翻译成另一个地址（物理地址）
+
+虚拟地址和物理内存地址的分离，给进程带来便利性和安全性。虚拟地址必须和物理地址建立一一对应关系，才能正确的进行地址转换。
+
+Linux采用分页的方式来记录对应关系。所谓分页，就是以更大尺寸的单位页来管理内存。
+
+#### **内核空间和用户空间**
+
+​    Linux的虚拟地址空间范围为0～4G，Linux内核将这4G字节的空间分为两部分，将最高的1G字节（从虚拟地址0xC0000000到0xFFFFFFFF）供内核使用，称为“内核空间”。而将较低的3G字节（从虚拟地址0x00000000到0xBFFFFFFF）供各个进程使用，称为“用户空间。因为每个进程可以通过系统调用进入内核，因此，Linux内核由系统内的所有进程共享。于是，从具体进程的角度来看，每个进程可以拥有4G字节的虚拟空间。
 
 ## 📚 杂货
 
@@ -5542,9 +6249,11 @@ REST：Repersentational State Transfer (表象层状态转变)
 
 7. 按需编码、可制定代码
 
-
-
 [面试官：你连RESTful都不知道我怎么敢要你](https://www.cnblogs.com/zhangmumu/p/11936262.html)
+
+#### 场景
+
+[微信朋友圈是怎么做的架构？](https://www.jianshu.com/p/3fb3652ff450)
 
 ## 参考
 
@@ -5561,3 +6270,28 @@ https://www.nowcoder.com/tutorial/93/8ba2828006dd42879f3a9029eabde9f1
 #### 智能指针
 
 内存泄漏：程序未能释放已经不能在使用的内容
+
+#### RAII对象，资源获取及初始化
+
+在构造函数中创建，在析构函数中销毁
+
+如：智能指针，std::lock_guard<std::mutex> l1(mutex);
+
+```c++
+class CWinLock
+{
+public:
+    CWinLock(CRITICAL_SECTION* pCritmp)
+    {
+        m_pCritmp = pCritmp;
+        EnterCriticalSection(m_pCritmp);
+    }
+    ~CWinLock()
+    {
+        LeaveCriticalSection(m_pCritmp);
+    }
+private:
+    CRITICAL_SECTION* m_pCritmp;
+}
+```
+
