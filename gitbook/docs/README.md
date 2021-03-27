@@ -90,6 +90,12 @@ C++中的explicit关键字只能修饰只有一个参数的类构造函数，作
 
 4、如果inline函数有多个返回点，将其转变为inline函数代码块末尾的分支（使GOTO）
 
+#### 内联与define区别
+
+1、define：在预处理节点时处理，只是简单的字符串替换，不会做类型检查
+
+2、inline：在编译节点完成，将代码插入到调用处，类成员一般都是以内联的形式提现
+
 #### 优缺点
 
 **优点**
@@ -858,6 +864,64 @@ unique_ptr<string> p3;
 p3 = unique_ptr<string>(new string("sdf"));   //allowed
 ```
 
+实现一个unique_ptr
+
+```c++
+template <typename T>
+class MyUniquePtr{
+public:
+  explicit MyUniquePtr (T* ptr = nullptr) : mPtr(ptr){}
+  ~MyUniquePtr(){
+    if (mPtr) delete mPtr;
+  }
+  
+  MyUniquePtr(MyUniquePtr &&p) noexcept;  //如果员unique_ptr是一个临时右值，则允许这么做。
+  MyUniquePtr& operator=(MyUniquePtr&& p) noexcept;
+  
+  MyUniquePtr(MyUniquePtr &p) = delete;
+  MyUniquePtr& operator=(MyUniquePtr& p) = delete;
+  
+  T* operator*() const noexcept{return mPtr;}
+  T& operator->() const noexcept{return *mPtr;}
+  
+  void reset(T* q= nullptr) noexcept
+  {
+    if (q!=mPtr) {
+      if (mPtr) delete mPtr;
+      mPtr = q;
+    }
+  }
+  
+  T* release() noexcept
+  {
+    T* res = mPtr;
+    mPtr = nullptr;
+    return res;
+  }
+  T* get() const noexcept {return mPtr;}
+  void swap(MyUniquePtr &p) noexcept {
+    using std::swap;
+    swap(mPtr, p.mPtr);
+  }
+private:
+  T * mPtr;
+};
+template<typename T>
+MyUniquePtr<T>& MyUniquePtr<T>::operator=(MyUniquePtr &&p) noexcept
+{
+    swap(*this, p);
+    return *this;
+}
+
+template<typename T>
+MyUniquePtr<T> :: MyUniquePtr(MyUniquePtr &&p) noexcept : mPtr(p.mPtr)
+{
+    p.mPtr == NULL;
+}
+```
+
+
+
 3、shared_ptr
 
 实现共享式坐拥。多个智能指针可以指向相同对象，该对象和其相关资源会在”最后一个引用被销毁时“释放。它使用计数机制来表明资源被几个指针共享。可以通过成员函数use_count()来查看资源的所有者个数。除了可以通过new来构造，还可以通过传入auto_ptr, unique_ptr, weak_ptr来构造。当我们调用release()时，当前指针会释放资源所有权，计数器减一，当计数器等于0时，资源被释放
@@ -1359,6 +1423,32 @@ printf("%d, %d\n", i++, ++i);  //8, 9
 A：不可以。
 
 当复制一个auto_ptr时，它所指向的元素的对象的所有权被交付到被复制的auto_ptr上面，而它自身被复制设置为null。复制一个auto_ptr意味着改变它的值。出错。
+
+### 🏷 Makefile
+
+https://seisman.github.io/how-to-write-makefile/introduction.html#id1
+
+```makefile
+target ... : prerequisties ...
+		command
+```
+
+Target: 可以是一个object file，也可以是一个执行文件，还可以是一个标签
+
+Prerequisties：生成该target所依赖的文件和/或target
+
+command
+
+```makefile
+edit : main.o kdb.o
+		cc -o edit main.o kdb.o
+main.o : main.c defs.h
+		cc -c main.c
+kdb.p : kdb.c defs.h
+		cc -c kdb.c
+```
+
+
 
 ## 📚Effective C++
 
